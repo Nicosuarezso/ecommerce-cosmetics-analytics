@@ -196,25 +196,23 @@ El proyecto contempla las siguientes etapas:
 ### 7.1 Información confirmada
 
 - Sector: e-commerce de cosméticos.
-- Contexto: pe` registra el tipo de interacción realizada.
-- `user_id` permite identificar al usuario.
-- `user_session` permite identificar la sesión.
-- `product_id` permite identificar el producto asociado al evento.
-- `price` contiene el precio asociado al registro.
-- Se han observado al menos los siguientes tipos de evento:
-  - `view`
-  - `cart`
-  - `remove_from_cart`
-
+- Contexto: evolución plana durante los últimos meses.
+- Periodo disponible: 1 de octubre de 2019 a 29 de febrero de 2020.
+- Formato de datos: base de datos SQLite `.db`.
+- Número de tablas: 5.
 - Volumen total: 2,095,076 registros.
-- Distribución de registros por tabla:
-  - `2019-Oct`: 407,925 registros.
-  - `2019-Nov`: 462,833 registros.
-  - `2019-Dec`: 351,304 registros.
-  - `2020-Jan`: 443,224 registros.
-  - `2020-Feb`: 429,790 registros.
-- La tabla con mayor volumen de registros es `2019-Nov`.
-- La tabla con menor volumen de registros es `2019-Dec`.
+- Las cinco tablas representan meses consecutivos y presentan el mismo esquema.
+- Todas las tablas contienen las siguientes variables:
+  - `index`
+  - `event_time`
+  - `event_type`
+  - `product_id`
+  - `category_id`
+  - `category_code`
+  - `brand`
+  - `price`
+  - `user_id`
+  - `user_session`
 
 ### 7.2 Interpretación actual de la estructura
 
@@ -272,6 +270,17 @@ Las cinco tablas mensuales parecen representar particiones temporales del mismo 
 - Existe variabilidad en el volumen mensual de eventos.
 - `2019-Dec` presenta el menor número de registros del periodo.
 - Esta variación no debe interpretarse todavía como una variación del desempeño comercial, ya que el conteo corresponde a eventos y no directamente a visitas, sesiones, conversiones, clientes, pedidos o ingresos.
+
+### 7.5 Cobertura temporal
+
+| Tabla | Registros | Inicio | Fin |
+|---|---:|---|---|
+| `2019-Oct` | 407,925 | 2019-10-01 00:01:46 UTC | 2019-10-31 23:56:54 UTC |
+| `2019-Nov` | 462,833 | 2019-11-01 00:04:51 UTC | 2019-11-30 23:59:27 UTC |
+| `2019-Dec` | 351,304 | 2019-12-01 00:01:02 UTC | 2019-12-31 23:59:52 UTC |
+| `2020-Jan` | 443,224 | 2020-01-01 00:01:31 UTC | 2020-01-31 23:58:26 UTC |
+| `2020-Feb` | 429,790 | 2020-02-01 00:01:43 UTC | 2020-02-29 23:59:54 UTC |
+| **Total** | **2,095,076** | **2019-10-01** | **2020-02-29** |
 
 ### Por investigar
 
