@@ -195,14 +195,21 @@ El proyecto contempla las siguientes etapas:
 
 ### Conocido
 
+### Conocido
+
 - Sector: e-commerce de cosméticos.
 - Contexto: evolución plana durante los últimos meses.
-- Periodo de datos: últimos tres meses.
-- Volumen aproximado: 2 millones de registros.
+- Periodo disponible inicialmente reportado: últimos tres meses.
+- Periodo observado en la base de datos: octubre 2019 a febrero 2020.
+- Volumen aproximado inicialmente estimado: 2 millones de registros.
 - Formato de datos: base de datos `.db`.
-- Objetivo principal: identificar oportunidades para incrementar la facturación.
-- Áreas principales: customer journey, clientes y productos.
-- Posible uso de Machine Learning: sí, sujeto a evaluación.
+- Número de tablas: 5.
+- Tablas disponibles:
+  - `2019-Oct`
+  - `2019-Nov`
+  - `2019-Dec`
+  - `2020-Jan`
+  - `2020-Feb`
 
 ### Por investigar
 
