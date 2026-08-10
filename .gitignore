@@ -1,0 +1,132 @@
+# ============================================
+# DATA SCIENCE PROJECT - GITIGNORE
+# ============================================
+
+# ----------------------------
+# Data / Databases
+# ----------------------------
+
+# Raw data
+data/raw/*
+
+# Intermediate data
+data/interim/*
+
+# Processed data
+data/processed/*
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Keep directory structure
+!data/raw/.gitkeep
+!data/interim/.gitkeep
+!data/processed/.gitkeep
+
+
+# ----------------------------
+# Machine Learning Models
+# ----------------------------
+
+models/*
+
+# Keep directory
+!models/.gitkeep
+
+
+# ----------------------------
+# Python
+# ----------------------------
+
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Conda environments
+.conda/
+conda-env/
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+
+
+# ----------------------------
+# Jupyter Notebook
+# ----------------------------
+
+.ipynb_checkpoints/
+.jupyter/
+
+
+# ----------------------------
+# IDEs / Editors
+# ----------------------------
+
+.vscode/
+.idea/
+
+# Spyder
+.spyderproject
+.spyproject
+.ropeproject
+
+
+# ----------------------------
+# Operating System
+# ----------------------------
+
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+
+# ----------------------------
+# Environment Variables
+# ----------------------------
+
+.env
+.env.*
+!.env.example
+
+
+# ----------------------------
+# Logs
+# ----------------------------
+
+*.log
+logs/
+
+
+# ----------------------------
+# Temporary Files
+# ----------------------------
+
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+
+
+# ----------------------------
+# Large Generated Files
+# ----------------------------
+
+*.csv
+*.parquet
+*.feather
+*.pkl
+*.pickle
+*.joblib
