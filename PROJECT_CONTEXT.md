@@ -214,6 +214,30 @@ El proyecto contempla las siguientes etapas:
   - `user_id`
   - `user_session`
 
+La base de datos contiene cuatro tipos de eventos:
+
+| Evento | Registros | Participación |
+|---|---:|---:|
+| `view` | 965,893 | 46.10% |
+| `cart` | 585,854 | 27.96% |
+| `remove_from_cart` | 415,754 | 19.84% |
+| `purchase` | 127,575 | 6.09% |
+| **Total** | **2,095,076** | **100%** |
+
+Los eventos observados permiten representar diferentes etapas del customer journey, incluyendo visualización de productos, adición al carrito, eliminación del carrito y compra.
+
+Se confirmó que:
+
+- Un usuario puede tener múltiples sesiones.
+- Un usuario tiene un promedio de 2.74 sesiones en el periodo analizado.
+- Se observó un máximo de 3,368 sesiones asociadas a un único `user_id`.
+- Una sesión puede contener múltiples eventos.
+- Una sesión contiene un promedio de 4.67 eventos.
+- Se observó un máximo de 5,411 eventos asociados a una única sesión.
+
+Estos valores extremos requieren investigación adicional para determinar si representan comportamiento real, usuarios/sesiones atípicas o posibles problemas de tracking.
+
+
 ### 7.2 Interpretación actual de la estructura
 
 Las observaciones iniciales sugieren que cada fila representa un evento asociado a un usuario, una sesión y un producto en un momento determinado.
@@ -243,33 +267,18 @@ Las cinco tablas mensuales parecen representar particiones temporales del mismo 
 - Oportunidades de Machine Learning.evolución plana durante los últimos meses.
 - Periodo disponible: octubre de 2019 a febrero de 2020.
 - Formato de datos: base de datos SQLite `.db`.
-- Número de tablas: 5.
-- Tablas disponibles:
-  - `2019-Oct`
-  - `2019-Nov`
-  - `2019-Dec`
-  - `2020-Jan`
-  - `2020-Feb`
-- Las cinco tablas presentan el mismo esquema.
-- Todas las tablas contienen las siguientes variables:
-  - `index`
-  - `event_time`
-  - `event_type`
-  - `product_id`
-  - `category_id`
-  - `category_code`
-  - `brand`
-  - `price`
-  - `user_id`
-  - `user_session`
-- `event_time` registra la fecha y hora del evento.
-- `event_ty
 
 ### 7.4 Observaciones iniciales
 
 - Existe variabilidad en el volumen mensual de eventos.
 - `2019-Dec` presenta el menor número de registros del periodo.
 - Esta variación no debe interpretarse todavía como una variación del desempeño comercial, ya que el conteo corresponde a eventos y no directamente a visitas, sesiones, conversiones, clientes, pedidos o ingresos.
+
+La evidencia inicial sugiere que cada fila representa un evento asociado a un usuario, una sesión y un producto en un momento determinado.
+
+Sin embargo, todavía no está confirmado que cada registro corresponda a una acción humana única. Se observaron eventos `remove_from_cart` consecutivos sobre el mismo producto en segundos sucesivos, por lo que será necesario investigar la granularidad y posibles duplicados o comportamientos particulares del sistema de tracking.
+
+Los porcentajes de eventos no deben interpretarse como tasas de conversión o funnel, ya que una misma sesión puede generar múltiples eventos de cada tipo.
 
 ### 7.5 Cobertura temporal
 
