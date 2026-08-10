@@ -206,6 +206,16 @@ El proyecto contempla las siguientes etapas:
   - `cart`
   - `remove_from_cart`
 
+- Volumen total: 2,095,076 registros.
+- Distribución de registros por tabla:
+  - `2019-Oct`: 407,925 registros.
+  - `2019-Nov`: 462,833 registros.
+  - `2019-Dec`: 351,304 registros.
+  - `2020-Jan`: 443,224 registros.
+  - `2020-Feb`: 429,790 registros.
+- La tabla con mayor volumen de registros es `2019-Nov`.
+- La tabla con menor volumen de registros es `2019-Dec`.
+
 ### 7.2 Interpretación actual de la estructura
 
 Las observaciones iniciales sugieren que cada fila representa un evento asociado a un usuario, una sesión y un producto en un momento determinado.
@@ -256,6 +266,12 @@ Las cinco tablas mensuales parecen representar particiones temporales del mismo 
   - `user_session`
 - `event_time` registra la fecha y hora del evento.
 - `event_ty
+
+### 7.4 Observaciones iniciales
+
+- Existe variabilidad en el volumen mensual de eventos.
+- `2019-Dec` presenta el menor número de registros del periodo.
+- Esta variación no debe interpretarse todavía como una variación del desempeño comercial, ya que el conteo corresponde a eventos y no directamente a visitas, sesiones, conversiones, clientes, pedidos o ingresos.
 
 ### Por investigar
 
