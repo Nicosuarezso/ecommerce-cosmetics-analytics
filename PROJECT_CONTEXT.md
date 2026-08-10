@@ -193,16 +193,48 @@ El proyecto contempla las siguientes etapas:
 
 ## 7. Estado actual del proyecto
 
-### Conocido
-
-### Conocido
+### 7.1 Información confirmada
 
 - Sector: e-commerce de cosméticos.
-- Contexto: evolución plana durante los últimos meses.
-- Periodo disponible inicialmente reportado: últimos tres meses.
-- Periodo observado en la base de datos: octubre 2019 a febrero 2020.
-- Volumen aproximado inicialmente estimado: 2 millones de registros.
-- Formato de datos: base de datos `.db`.
+- Contexto: pe` registra el tipo de interacción realizada.
+- `user_id` permite identificar al usuario.
+- `user_session` permite identificar la sesión.
+- `product_id` permite identificar el producto asociado al evento.
+- `price` contiene el precio asociado al registro.
+- Se han observado al menos los siguientes tipos de evento:
+  - `view`
+  - `cart`
+  - `remove_from_cart`
+
+### 7.2 Interpretación actual de la estructura
+
+Las observaciones iniciales sugieren que cada fila representa un evento asociado a un usuario, una sesión y un producto en un momento determinado.
+
+Esta interpretación todavía debe validarse mediante un análisis más profundo de la granularidad, los identificadores, los eventos y los posibles casos especiales.
+
+Las cinco tablas mensuales parecen representar particiones temporales del mismo tipo de información, dado que presentan el mismo esquema.
+
+### 7.3 Información todavía por investigar
+
+- Número exacto de registros de cada tabla.
+- Distribución de eventos.
+- Granularidad exacta de los registros.
+- Unicidad y comportamiento de `index`.
+- Unicidad y comportamiento de `user_id`.
+- Unicidad y comportamiento de `user_session`.
+- Posibles relaciones entre usuarios, sesiones y eventos.
+- Cobertura temporal exacta de cada tabla.
+- Valores faltantes.
+- Duplicados.
+- Calidad de `event_time`.
+- Distribución y valores de `event_type`.
+- Comportamiento de `product_id`, `category_id`, `category_code` y `brand`.
+- Comportamiento y distribución de `price`.
+- Posibles inconsistencias entre tablas mensuales.
+- Viabilidad de los análisis RFM, cohortes, LTV y recomendación.
+- Oportunidades de Machine Learning.evolución plana durante los últimos meses.
+- Periodo disponible: octubre de 2019 a febrero de 2020.
+- Formato de datos: base de datos SQLite `.db`.
 - Número de tablas: 5.
 - Tablas disponibles:
   - `2019-Oct`
@@ -210,6 +242,20 @@ El proyecto contempla las siguientes etapas:
   - `2019-Dec`
   - `2020-Jan`
   - `2020-Feb`
+- Las cinco tablas presentan el mismo esquema.
+- Todas las tablas contienen las siguientes variables:
+  - `index`
+  - `event_time`
+  - `event_type`
+  - `product_id`
+  - `category_id`
+  - `category_code`
+  - `brand`
+  - `price`
+  - `user_id`
+  - `user_session`
+- `event_time` registra la fecha y hora del evento.
+- `event_ty
 
 ### Por investigar
 
