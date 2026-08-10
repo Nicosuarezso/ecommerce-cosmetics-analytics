@@ -312,6 +312,39 @@ Los porcentajes de eventos no deben interpretarse como tasas de conversión o fu
 
 ---
 
+### 7.6 Dataset maestro
+
+Debido a que las cinco tablas mensuales presentan el mismo esquema, se consolidaron mediante `UNION ALL` en una única tabla maestra denominada `master_events`.
+
+La tabla maestra se almacenó en una nueva base de datos:
+
+`data/interim/master_events.db`
+
+Esta base de datos contiene la tabla:
+
+`master_events`
+
+con los 2,095,076 registros correspondientes al periodo octubre de 2019 a febrero de 2020.
+
+La base de datos original `data/raw/ecommerce.db` se mantiene sin modificaciones.
+
+La separación entre `raw` e `interim` permite conservar los datos originales y utilizar una versión consolidada para las siguientes etapas del proyecto.
+
+### Flujo de datos actual
+
+```text
+data/raw/ecommerce.db
+        │
+        │ Consolidación de tablas mensuales
+        │ mediante UNION ALL
+        ↓
+data/interim/master_events.db
+        │
+        └── master_events
+                │
+                ↓
+       02_data_quality.ipynb
+
 ## 8. Principio metodológico
 
 El proyecto seguirá una metodología orientada a la resolución de problemas reales de negocio.
