@@ -345,6 +345,204 @@ data/interim/master_events.db
                 ↓
        02_data_quality.ipynb
 
+### 7.6 Hallazgos iniciales de Data Quality
+
+#### `category_code`
+
+`category_code` presenta 2,060,411 valores missing, equivalentes al 98.35% de los registros.
+
+El análisis a nivel de producto muestra que el problema es estructural:
+
+| Estado | Productos | % |
+|---|---:|---:|
+| Completamente missing | 45,527 | 98.89% |
+| Completo | 507 | 1.10% |
+| Parcial | 4 | 0.01% |
+| **Total** | **46,038** | **100%** |
+
+La ausencia del atributo es prácticamente total a nivel de producto, por lo que no parece tratarse de un problema aleatorio de eventos.
+
+No se tomará todavía ninguna decisión de imputación o eliminación. Se investigará si `category_id` puede proporcionar una alternativa analítica más fiable.
+
+#### `brand`
+
+`brand` presenta 891,646 valores missing, equivalentes al 42.56% de los registros.
+
+A nivel de producto:
+
+| Estado | Productos | % |
+|---|---:|---:|
+| Completo | 22,169 | 48.15% |
+| Completamente missing | 20,148 | 43.77% |
+| Parcial | 3,721 | 8.08% |
+| **Total** | **46,038** | **100%** |
+
+A diferencia de `category_code`, existe un porcentaje relevante de productos con información parcial de marca. Estos productos requieren investigación adicional para determinar si existe una inconsistencia en los registros o una característica propia de la fuente de datos.
+
+#### Interpretación metodológica
+
+Los valores missing se están evaluando teniendo en cuenta la granularidad de cada variable. Para atributos asociados conceptualmente al producto, como `brand` y `category_code`, se analiza también la completitud a nivel de `product_id` y no únicamente a nivel de evento.
+
+### 7.7 Duplicados y unicidad
+
+Se realizaron tres comprobaciones diferentes:
+
+- Filas completamente duplicadas: `0`.
+- Registros duplicados excluyendo `index`: `0`.
+- Valores duplicados de `index`: `363,983`.
+
+La duplicación de `index` se debe a la consolidación de las cinco tablas mensuales mediante `UNION ALL`. Los mismos valores de `index` aparecen en diferentes meses, llegando algunos a aparecer cinco veces, una por cada tabla mensual.
+
+Por lo tanto:
+
+- No se detectaron duplicados reales de registros.
+- `index` no debe considerarse un identificador global de evento.
+- La repetición de `index` no será utilizada como criterio para eliminar registros.
+- Se evaluará posteriormente si `index` debe conservarse en el dataset analítico o eliminarse por no aportar información de negocio.
+
+## 8. Data Quality — Estado y decisiones
+
+### 8.1 Dataset analizado
+
+El análisis de calidad se realizó sobre la tabla maestra `master_events`, consolidada desde las cinco tablas mensuales originales.
+
+Dataset inicial:
+
+- Registros: 2,095,076
+- Columnas: 10
+- Periodo: octubre 2019 a febrero 2020
+
+El dataset fue cargado a Pandas para realizar las transformaciones y análisis de calidad.
+
+### 8.2 Transformaciones de tipos
+
+- `event_time` fue convertido de texto a `datetime64[ns, UTC]`.
+- Se verificó que la conversión fuera correcta.
+- No se detectaron valores `NaT`.
+- El rango temporal coincide con el periodo esperado.
+
+### 8.3 Completitud
+
+| Variable | Missing | % Missing | Decisión |
+|---|---:|---:|---|
+| `event_time` | 0 | 0.00% | Mantener |
+| `event_type` | 0 | 0.00% | Mantener |
+| `product_id` | 0 | 0.00% | Mantener |
+| `category_id` | 0 | 0.00% | Mantener |
+| `category_code` | 2,060,411 | 98.35% | Mantener |
+| `brand` | 891,646 | 42.56% | Mantener |
+| `price` | 0 | 0.00% | Mantener |
+| `user_id` | 0 | 0.00% | Mantener |
+| `user_session` | 506 | 0.02% | Mantener por ahora |
+
+#### `category_code`
+
+El análisis a nivel de producto mostró que la ausencia es estructural:
+
+- 45,527 productos completamente missing.
+- 507 productos completos.
+- 4 productos con información parcial.
+
+Por tanto, no se realizará imputación de `category_code`.
+
+`category_id`, que presenta 100% de completitud, será utilizado como referencia categórica principal cuando sea necesario.
+
+#### `brand`
+
+A nivel de producto:
+
+- 22,169 productos tienen `brand` completo.
+- 20,148 productos tienen `brand` completamente missing.
+- 3,721 productos presentan información parcial.
+
+Se conservarán los valores missing. No se realizará imputación en esta etapa.
+
+### 8.4 Duplicados y unicidad
+
+- Filas completamente duplicadas: 0.
+- Registros duplicados excluyendo `index`: 0.
+- `index` presenta 363,983 valores duplicados.
+
+La duplicación de `index` se debe a que las cinco tablas mensuales fueron consolidadas mediante `UNION ALL` y el índice original no representa un identificador global de evento.
+
+Por lo tanto:
+
+- No se eliminaron registros por duplicación de `index`.
+- `index` fue eliminado del dataset analítico por no aportar información de negocio.
+
+### 8.5 Validación de eventos
+
+Los únicos valores encontrados en `event_type` fueron:
+
+- `view`
+- `cart`
+- `remove_from_cart`
+- `purchase`
+
+No se detectaron valores inválidos.
+
+### 8.6 Validación de identificadores
+
+No se detectaron:
+
+- `product_id` negativos.
+- `product_id` iguales a 0.
+- `category_id` negativos.
+- `category_id` iguales a 0.
+- `user_id` negativos.
+- `user_id` iguales a 0.
+
+Cardinalidad observada:
+
+- 46,038 productos.
+- 508 categorías.
+- 163,936 usuarios.
+
+### 8.7 Validación de precios
+
+Se detectaron:
+
+- 11 registros con `price < 0` (0.001%).
+- 20,533 registros con `price = 0` (0.98%).
+
+Los 11 registros con precio negativo correspondían a eventos `purchase`. Al no existir en el dataset un evento explícito de devolución que permita justificar estos valores, se consideraron inválidos para el análisis de ventas y fueron eliminados.
+
+Los 20,533 registros con `price = 0` correspondían exclusivamente a eventos:
+
+- `view`
+- `cart`
+- `remove_from_cart`
+
+No se encontraron compras con precio igual a 0. Estos registros fueron eliminados para evitar distorsiones en análisis posteriores relacionados con precio, ingresos, AOV y LTV.
+
+### 8.8 Dataset procesado
+
+Después de las transformaciones de Data Quality:
+
+- Registros iniciales: 2,095,076
+- Registros eliminados: 20,544
+- Registros finales: 2,074,532
+- Columnas finales: 9
+
+El dataset limpio fue exportado a:
+
+`data/processed/ecommerce_clean.parquet`
+
+El archivo Parquet conserva los tipos de datos, incluyendo `event_time` como datetime con timezone UTC.
+
+### 8.9 Estructura actual de datos
+
+```text
+data/
+├── raw/
+│   └── ecommerce.db
+│
+├── interim/
+│   └── master_events.db
+│
+└── processed/
+    └── ecommerce_clean.parquet
+
 ## 8. Principio metodológico
 
 El proyecto seguirá una metodología orientada a la resolución de problemas reales de negocio.
