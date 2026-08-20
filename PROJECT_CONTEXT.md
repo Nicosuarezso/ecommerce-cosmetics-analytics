@@ -558,3 +558,91 @@ Las decisiones analíticas deberán estar justificadas por:
 - El potencial impacto sobre el negocio.
 
 El objetivo no es únicamente construir modelos, sino **utilizar datos para identificar oportunidades y apoyar mejores decisiones de negocio**.
+
+## 9. Customer Journey — decisiones metodológicas iniciales
+
+### 9.1 Unidad de análisis: sesión
+
+Para el análisis del customer journey se utilizará `user_session` como identificador de sesión, ya que es la unidad de sesión proporcionada por la fuente.
+
+Antes de adoptar esta decisión se evaluó su consistencia:
+
+- 446,054 sesiones únicas.
+- 446,047 sesiones están asociadas a un único usuario.
+- 6 sesiones están asociadas a 2 usuarios.
+- 1 sesión está asociada a 3 usuarios.
+- En total, únicamente 7 sesiones presentan múltiples usuarios, por lo que su impacto es marginal.
+
+También se evaluó una estrategia alternativa de *sessionization* basada en 30 minutos de inactividad. Esta metodología produjo 332,431 sesiones frente a las 446,054 sesiones originales, una reducción del 25.47%.
+
+Debido a que la sessionization de 30 minutos altera sustancialmente la estructura proporcionada por la fuente, se decidió conservar `user_session` como unidad de análisis.
+
+### 9.2 Limitación de duración de sesión
+
+Se detectaron algunas `user_session` con duraciones extremadamente elevadas. Algunas abarcan varios meses, llegando la duración máxima calculada a aproximadamente 217,502 minutos (~151 días).
+
+Esto indica que la diferencia entre el primer y último evento de `user_session` no puede interpretarse de forma fiable como duración real de una sesión de navegación.
+
+Por este motivo:
+
+- No se utilizará `duration_min` como métrica de sesión.
+- No se eliminarán sesiones únicamente por presentar una duración elevada.
+- No se aplicará una sessionization artificial para corregir este comportamiento.
+- El análisis se centrará en la presencia, volumen y comportamiento de los eventos dentro de cada `user_session`.
+
+### 9.3 Radiografía inicial de sesiones
+
+La tabla agregada de sesiones presenta los siguientes resultados:
+
+| Métrica | Media | Mediana | P75 | Máximo |
+|---|---:|---:|---:|---:|
+| Eventos | 4.65 | 1 | 3 | 2,793 |
+| Views | 2.16 | 1 | 2 | 1,005 |
+| Carts | 1.29 | 0 | 0 | 778 |
+| Remove from cart | 0.92 | 0 | 0 | 2,422 |
+| Purchases | 0.29 | 0 | 0 | 259 |
+
+Las distribuciones presentan un fuerte sesgo hacia la derecha. La sesión mediana contiene únicamente un evento, normalmente una visualización, mientras que una proporción reducida de sesiones concentra un volumen elevado de eventos.
+
+Esto sugiere que la mayoría de las sesiones presentan un comportamiento superficial y no avanzan hacia las etapas profundas del customer journey.
+
+### 9.4 Alcance preliminar de eventos por sesión
+
+Porcentaje de sesiones que contienen al menos un evento de cada tipo:
+
+| Evento | % de sesiones |
+|---|---:|
+| View | 94.41% |
+| Cart | 21.78% |
+| Remove from cart | 10.77% |
+| Purchase | 3.46% |
+
+Estos porcentajes son métricas descriptivas de presencia de eventos por sesión y no se consideran todavía tasas de conversión definitivas.
+
+Para el funnel se utilizará como estructura principal:
+
+**View → Cart → Purchase**
+
+`remove_from_cart` se analizará como una señal de fricción/abandono y no como una etapa obligatoria del funnel.
+
+### 9.5 Resultados descartados
+
+Durante la exploración inicial se calcularon métricas utilizando la primera versión de la tabla de sesiones, incluyendo duración de sesión y una clasificación preliminar de sesiones.
+
+Estas métricas fueron descartadas después de identificar las limitaciones de `user_session` para representar duración real de navegación.
+
+El valor de 3.46% de sesiones con compra se conserva únicamente como estadística descriptiva de presencia de eventos, pero no se interpreta todavía como una tasa de conversión final.
+
+### 9.6 Próximo paso
+
+Construir el Customer Journey/Funnel utilizando `user_session` como unidad de análisis.
+
+Se calcularán y analizarán:
+
+- sesiones que alcanzan cada etapa;
+- conversión View → Cart;
+- conversión Cart → Purchase;
+- conversión global de sesión;
+- abandono y señales de fricción asociadas a `remove_from_cart`.
+
+Las definiciones de cada KPI se establecerán antes de interpretar los resultados.
