@@ -646,3 +646,126 @@ Se calcularán y analizarán:
 - abandono y señales de fricción asociadas a `remove_from_cart`.
 
 Las definiciones de cada KPI se establecerán antes de interpretar los resultados.
+## 10. Customer Journey — línea base de KPIs
+
+Se consolidaron los principales KPIs del Customer Journey utilizando `user_session`
+como unidad de análisis. Los indicadores se agrupan en tráfico, conversión,
+fricción y facturación.
+
+### 10.1 KPIs de tráfico y usuarios
+
+| KPI | Valor | Definición |
+|---|---:|---|
+| Sesiones | 446,054 | `user_session` únicas |
+| Usuarios únicos | 163,781 | `user_id` únicos |
+| Sesiones por usuario | 2.72 | Sesiones / usuarios |
+| View Rate | 94.41% | Sesiones con ≥1 `view` / sesiones totales |
+| View-only Rate | 75.57% | Sesiones cuya secuencia contiene únicamente `view` / sesiones totales |
+
+### 10.2 KPIs de conversión
+
+| KPI | Valor | Definición |
+|---|---:|---|
+| Cart Rate | 21.78% | Sesiones con ≥1 `cart` / sesiones totales |
+| Purchase Rate | 3.46% | Sesiones con ≥1 `purchase` / sesiones totales |
+| View → Cart | 23.07% | Sesiones con `cart` / sesiones con `view` |
+| Cart → Purchase | 15.91% | Sesiones con `purchase` / sesiones con `cart` |
+
+La métrica de Purchase Rate se interpreta como **conversión por sesión** y no
+como conversión tradicional por orden, debido a que el dataset no contiene un
+identificador explícito de transacción.
+
+### 10.3 KPIs de fricción
+
+| KPI | Valor | Definición |
+|---|---:|---|
+| Cart Remove Rate | 49.46% | Sesiones con `remove_from_cart` / sesiones con `cart` |
+| Remove/Cart Event Ratio | 71.39% | Eventos `remove_from_cart` / eventos `cart` |
+
+El Cart Remove Rate indica que aproximadamente la mitad de las sesiones que
+registran actividad en carrito también registran al menos una eliminación.
+
+Estas métricas **no se interpretan directamente como tasa de abandono de
+carrito**, ya que una sesión puede añadir, eliminar y volver a añadir productos
+antes de completar una compra.
+
+### 10.4 KPIs de ventas y facturación
+
+Se creó `df_purchases`, compuesto exclusivamente por eventos
+`event_type == "purchase"`.
+
+El dataset presenta una granularidad de **evento de producto comprado** y no
+contiene un `order_id` explícito. Por este motivo, algunos indicadores
+tradicionales de e-commerce, como AOV por orden, no pueden calcularse
+directamente.
+
+| KPI | Valor | Interpretación |
+|---|---:|---|
+| Purchase Events | 127,564 | Número de eventos `purchase` |
+| Compradores | 11,040 | `user_id` únicos con purchase |
+| Sesiones con compra | 15,452 | `user_session` únicas con purchase |
+| Revenue | 621,549.60 | Suma de `price` en eventos purchase |
+| Revenue por comprador | 56.30 | Revenue / compradores |
+| Valor medio por evento de compra | 4.87 | Revenue / purchase events |
+| Mediana por evento de compra | 3.00 | Mediana de `price` en purchase events |
+
+**Nota:** No se utilizará "Unidades vendidas" como KPI definitivo, ya que no se
+ha demostrado que cada evento `purchase` represente necesariamente una unidad
+física vendida.
+
+El valor medio de 4.87 se denomina **Valor medio por evento de compra** y no AOV
+tradicional, dado que no existe una variable que identifique órdenes.
+
+### 10.5 Hallazgos principales de Customer Journey
+
+Los principales resultados obtenidos hasta esta etapa son:
+
+1. El 75.57% de las sesiones son exclusivamente `view`, indicando un tráfico
+   predominantemente superficial.
+2. El 94.41% de las sesiones registra al menos un `view`.
+3. El 21.78% de las sesiones registra actividad en carrito.
+4. El 3.46% de las sesiones registra al menos un `purchase`.
+5. La conversión View → Cart es 23.07%.
+6. La conversión Cart → Purchase es 15.91%.
+7. El 49.46% de las sesiones con actividad de carrito registra al menos un
+   `remove_from_cart`.
+8. El journey observado no es estrictamente lineal. Existen secuencias como
+   `view → cart → view`, `view → cart → remove_from_cart` y
+   `cart → view → cart`.
+9. Por este motivo, el Customer Journey se analizará como un conjunto de
+   comportamientos y transiciones observadas dentro de las sesiones, evitando
+   asumir que todos los usuarios siguen un funnel lineal.
+10. La principal oportunidad preliminar parece encontrarse en la transición
+    desde visualización hacia carrito, aunque se requieren análisis posteriores
+    de clientes y productos para determinar las causas y cuantificar el impacto
+    económico.
+
+### 10.6 Limitaciones relevantes
+
+- `user_session` se utilizará como unidad de sesión, pero no como medida fiable
+  de duración.
+- No existe un `order_id` explícito.
+- No puede calcularse un AOV tradicional por orden con la información disponible.
+- Los eventos `purchase` se tratarán como eventos de compra, no necesariamente
+  como unidades físicas.
+- `remove_from_cart` se considera una señal de fricción y no una medida directa
+  de abandono.
+- Los resultados del Customer Journey describen comportamiento observado y no
+  establecen causalidad.
+
+### 10.7 Estado del proyecto
+
+**Customer Journey: COMPLETADO**
+
+Se dispone de una línea base de comportamiento, conversión, fricción y
+facturación para utilizar como referencia en los siguientes análisis.
+
+Próximas áreas de análisis:
+
+1. Análisis de clientes.
+2. Segmentación RFM.
+3. Análisis de cohortes.
+4. LTV y comportamiento de recompra.
+5. Análisis de productos.
+6. Sistema de recomendación.
+7. Evaluación de oportunidades de Machine Learning.
