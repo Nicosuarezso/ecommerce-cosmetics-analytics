@@ -769,3 +769,257 @@ Próximas áreas de análisis:
 5. Análisis de productos.
 6. Sistema de recomendación.
 7. Evaluación de oportunidades de Machine Learning.
+
+## 11. Customer Journey — análisis temporal
+
+Se inició el análisis temporal del Customer Journey con el objetivo de identificar
+patrones de actividad, conversión y facturación que puedan aportar valor al equipo
+comercial y de marketing.
+
+El análisis temporal se dividió en:
+
+1. Tendencia mensual.
+2. Patrón semanal.
+3. Patrón intradía.
+4. Interpretación de negocio.
+
+### 11.1 Tendencia mensual
+
+Se analizaron mensualmente:
+
+- Sesiones.
+- Usuarios únicos.
+- Sesiones con carrito.
+- Sesiones con compra.
+- Purchase Rate.
+- View → Cart.
+- Cart → Purchase.
+- Purchase Events.
+- Revenue.
+- Valor medio por evento de compra.
+
+#### Principales observaciones
+
+**2019-11** destacó como un período particularmente fuerte:
+
+- Aumento de sesiones respecto a octubre.
+- Disminución considerable de usuarios únicos.
+- Purchase Rate superior al 4%, uno de los valores más altos del período.
+- View → Cart disminuyó respecto al mes anterior, aproximadamente de 27% a 24%.
+- Cart → Purchase alcanzó aproximadamente 17%, el valor más alto del período.
+
+Esto muestra que un mayor desempeño comercial no necesariamente implica una
+mejoría simultánea en todas las etapas del journey.
+
+Posteriormente se observó una disminución progresiva de:
+
+- Purchase Rate: aproximadamente de 4% hacia 3.2%.
+- View → Cart: aproximadamente de 27% hacia 22%.
+
+Mientras que Cart → Purchase permaneció relativamente estable.
+
+Esto genera como hipótesis de análisis que la disminución de la conversión global
+podría estar relacionada principalmente con una menor conversión de View → Cart,
+aunque no se establece causalidad.
+
+#### Revenue y Purchase Events
+
+2019-11 presentó el mayor revenue del período, aproximadamente Bs 140,000.
+
+En 2019-12 se observó una caída importante, hasta aproximadamente Bs 100,000,
+seguida posteriormente por una recuperación.
+
+La evolución de Revenue y Purchase Events presentó una trayectoria muy similar,
+lo que indica descriptivamente una fuerte asociación entre el volumen de eventos
+de compra y la facturación.
+
+Se analizó además el valor medio por evento de compra:
+
+| Mes | Valor medio por evento |
+|---|---:|
+| 2019-10 | 4.869 |
+| 2019-11 | 4.768 |
+| 2019-12 | 4.968 |
+| 2020-01 | 4.923 |
+| 2020-02 | 4.870 |
+
+El valor medio permaneció relativamente estable durante todo el período,
+aproximadamente entre 4.77 y 4.97.
+
+Por lo tanto, la variación mensual del revenue parece estar explicada
+principalmente por cambios en el volumen de eventos de compra, mientras que el
+valor medio por evento presenta poca variación.
+
+Esta interpretación es descriptiva y no implica causalidad.
+
+### 11.2 Patrón semanal
+
+Se analizaron:
+
+- Sesiones.
+- Usuarios.
+- Events.
+- Sesiones con carrito.
+- Sesiones con compra.
+- Revenue.
+- Purchase Rate.
+- View → Cart.
+- Cart → Purchase.
+
+#### Tráfico
+
+La actividad se concentra principalmente entre martes y jueves:
+
+- Martes: 68,361 sesiones.
+- Miércoles: 68,705 sesiones.
+- Jueves: 69,021 sesiones.
+
+Los días con menor actividad son:
+
+- Sábado: 58,632 sesiones.
+- Domingo: 59,138 sesiones.
+
+Existe por tanto un patrón semanal de mayor actividad entre semana y menor
+actividad durante el fin de semana.
+
+#### Conversión
+
+El jueves presentó el Purchase Rate más alto:
+
+- Jueves: 3.61%.
+- Lunes: 3.58%.
+- Viernes: 3.50%.
+- Martes: 3.38%.
+- Miércoles: 3.37%.
+- Domingo: 3.37%.
+- Sábado: 3.14%.
+
+El sábado presentó simultáneamente el menor volumen de sesiones y el menor
+Purchase Rate.
+
+#### Revenue
+
+El jueves fue el día con mayor revenue:
+
+- Jueves: Bs 101,597.
+- Viernes: Bs 93,569.
+- Lunes: Bs 92,364.
+- Martes: Bs 91,278.
+- Miércoles: Bs 88,977.
+- Domingo: Bs 79,925.
+- Sábado: Bs 73,840.
+
+El jueves destaca por combinar alto volumen de tráfico, mayor Purchase Rate y
+mayor revenue.
+
+#### Etapas del Customer Journey
+
+View → Cart presentó su valor máximo el miércoles (24.57%), seguido por
+domingo (24.16%) y lunes (24.15%).
+
+Cart → Purchase presentó sus valores más altos el viernes (16.98%) y jueves
+(16.89%).
+
+Esto demuestra que las distintas etapas del journey no presentan necesariamente
+el mismo comportamiento temporal.
+
+Por ejemplo:
+
+- Miércoles presenta el mayor View → Cart, pero un Cart → Purchase relativamente
+  menor.
+- Jueves presenta un View → Cart inferior al miércoles, pero un Cart → Purchase
+  considerablemente mayor.
+
+Por lo tanto, no se debe optimizar una única etapa del funnel de manera aislada.
+
+### 11.3 Hipótesis y oportunidades preliminares
+
+Los análisis temporal mensual y semanal generan las siguientes hipótesis para
+investigaciones posteriores:
+
+1. La caída de conversión observada durante el período podría estar relacionada
+   principalmente con una menor conversión View → Cart.
+2. Las variaciones de revenue parecen estar asociadas principalmente con cambios
+   en el volumen de eventos de compra, dado que el valor medio por evento se
+   mantiene relativamente estable.
+3. El jueves representa un período de alto desempeño comercial.
+4. El sábado presenta una combinación de menor tráfico y menor conversión.
+5. Las diferentes etapas del Customer Journey responden de manera diferente a la
+   temporalidad.
+6. Los patrones semanales podrían tener implicaciones para la planificación de
+   campañas y acciones comerciales, pero no deben convertirse todavía en
+   recomendaciones causales.
+
+### 11.4 Limitaciones del análisis temporal
+
+- El dataset contiene únicamente cinco meses de información, por lo que no es
+  suficiente para establecer estacionalidad anual.
+- No se dispone de información sobre canal de adquisición, campaña o fuente de
+  tráfico.
+- Las diferencias temporales son descriptivas y no permiten determinar
+  causalidad.
+- `user_session` presenta limitaciones para análisis de duración temporal, por lo
+  que el análisis se concentra en comportamiento agregado por período.
+- Revenue se calcula a partir de eventos `purchase`.
+- No existe `order_id`, por lo que el valor medio utilizado corresponde a eventos
+  de compra y no a órdenes.
+
+### 11.5 Estado actual
+
+**Customer Journey: COMPLETADO**
+
+**Análisis temporal: 5.1 Tendencia mensual — COMPLETADO**
+
+**Análisis temporal: 5.2 Patrón semanal — COMPLETADO**
+
+**Pendiente:**
+- 5.3 Patrón intradía.
+- 5.4 Interpretación final de negocio.
+- Análisis de abandono y recuperación de carrito.
+- Insights CRO.
+
+### 11.6 Próximo paso
+
+Continuar con **5.3 Patrón intradía**, utilizando la variable `hour` para
+analizar volumen de actividad, conversión, revenue y posibles señales de
+fricción según la hora del día.
+
+### Hipótesis pendiente — intención nocturna y conversión diurna
+
+El análisis intradía identificó una diferencia relevante entre las etapas del Customer Journey:
+
+* `View → Cart` presenta mayores niveles durante aproximadamente **21:00–01:00**.
+* `Cart → Purchase` presenta mayores niveles principalmente durante aproximadamente **06:00–23:00**.
+* El tráfico, revenue y sesiones con compra se concentran principalmente durante el período diurno.
+
+Esto genera una hipótesis de comportamiento:
+
+> **Los usuarios podrían desarrollar intención de compra durante la noche y completar la compra posteriormente durante el día.**
+
+Esta hipótesis **NO ha sido validada**. Las métricas actuales están agregadas por hora y no permiten determinar si los eventos nocturnos y diurnos pertenecen al mismo usuario.
+
+### Acción futura
+
+Investigar durante el notebook de **Customer Analysis** utilizando:
+
+* `user_id`
+* `user_session`
+* `event_time`
+* `event_type`
+* `product_id`
+
+El objetivo será determinar si existe una transición temporal a nivel individual:
+
+`View/Cart nocturno → Compra posterior`
+
+y, de existir, medir:
+
+* proporción de usuarios que realizan este comportamiento;
+* tiempo entre intención y compra;
+* hora de inicio y finalización del journey;
+* comportamiento entre sesiones;
+* productos o categorías involucradas, si la estructura del dataset lo permite.
+
+**Prioridad:** hipótesis relevante para Customer Analysis.
+
+**Estado:** pendiente de validación.
