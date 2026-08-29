@@ -1023,3 +1023,236 @@ y, de existir, medir:
 **Prioridad:** hipótesis relevante para Customer Analysis.
 
 **Estado:** pendiente de validación.
+
+# PROJECT CONTEXT — Actualización: Customer Journey, Abandono y nuevas líneas analíticas
+
+## 6. Análisis de abandono y recuperación
+
+### 6.1 Abandono a nivel sesión
+
+Se definió una sesión abandonada como aquella que contiene al menos un evento `cart` pero ningún evento `purchase` dentro de la misma `user_session`.
+
+Resultados obtenidos:
+
+- Sesiones abandonadas: **84,581**
+- Usuarios que abandonaron: **35,791**
+- Tasa de abandono de carrito: aproximadamente **87%**
+- Tasa de sesiones con compra posterior al carrito dentro de la sesión: aproximadamente **12%**
+
+La métrica representa **abandono dentro de la sesión**, por lo que no debe interpretarse como abandono definitivo del usuario.
+
+---
+
+### 6.2 Recuperación posterior
+
+Se investigó qué ocurre posteriormente con los usuarios que tuvieron una sesión con carrito sin compra.
+
+Definición:
+
+> **Usuario recuperado:** usuario que tuvo al menos una sesión con `cart` sin `purchase` y posteriormente registró un evento `purchase`.
+
+Resultados:
+
+- Usuarios que abandonaron: **35,791**
+- Usuarios recuperados: **6,525**
+- **Recovery Rate: 18.23%**
+
+La métrica debe interpretarse como:
+
+> El 18.23% de los usuarios que tuvieron una sesión de carrito sin compra realizaron posteriormente una compra.
+
+No se establece causalidad entre el abandono y la compra posterior. Una compra posterior no necesariamente corresponde al mismo producto o intención original.
+
+### Hipótesis futura
+
+Investigar posteriormente:
+
+`Abandono → tiempo → compra`
+
+utilizando `user_id`, `user_session`, `event_time` y `product_id`, con el objetivo de determinar si existe una relación temporal más precisa entre abandono y recuperación.
+
+---
+
+## 6.4 Abandono por producto
+
+Se analizó el abandono a nivel de producto utilizando:
+
+- `user_session`
+- `product_id`
+- `event_type`
+
+Se consideró que un producto fue abandonado cuando apareció en un evento `cart` dentro de una sesión que no registró posteriormente un `purchase` para ese producto.
+
+### Hallazgos
+
+- Se identificaron productos con tasas de abandono extremadamente elevadas.
+- Al menos un producto presentó **100% de abandono**, sin compras registradas bajo la definición utilizada.
+- Los 10 productos con mayores tasas de abandono presentaron aproximadamente **96%–98%**.
+- Los productos con mayor abandono no necesariamente tenían menor volumen de sesiones con carrito que aquellos con menor abandono.
+- Los productos con menores tasas de abandono presentaron aproximadamente **62.3%–70%**.
+
+### Interpretación
+
+El fenómeno de abandono no parece estar limitado exclusivamente a productos con bajo volumen.
+
+Sin embargo, una tasa de abandono elevada por sí sola no demuestra que exista un problema específico del producto. Para identificar oportunidades comerciales se deberá considerar simultáneamente:
+
+- tasa de abandono;
+- volumen de carritos;
+- precio;
+- categoría;
+- marca;
+- volumen de compras.
+
+### Oportunidad CRO
+
+La elevada tasa de abandono observada constituye una señal para realizar una **revisión cualitativa del proceso de compra en la web**, incluyendo posibles fricciones en:
+
+- información del producto;
+- precio;
+- disponibilidad;
+- navegación;
+- carrito;
+- checkout;
+- medios de pago.
+
+No se establece que el proceso de compra sea la causa del abandono; se plantea como una **hipótesis de investigación**.
+
+---
+
+## 6.5 Abandono por categoría
+
+El análisis se realizó utilizando **`category_id`** como identificador de categoría debido a la elevada cantidad de valores faltantes en `category_code`.
+
+### Distribución de sesiones con carrito por categoría
+
+- Categorías analizadas: **463**
+- Mínimo: **1**
+- Q1: **44.5**
+- Mediana: **166**
+- Q3: **508**
+- Máximo: **9,773**
+
+Se utilizó inicialmente un filtro de **50 sesiones con carrito** para evitar que categorías con muy poco volumen dominaran los rankings.
+
+### Hallazgos
+
+- Las categorías con mayores tasas de abandono presentan aproximadamente **90%–98%**.
+- En estas categorías sí se observa generalmente un menor volumen de sesiones con carrito.
+- Las categorías con menores tasas de abandono presentan aproximadamente **35.7%–55%**.
+
+### Interpretación
+
+A diferencia del análisis por producto, en categorías sí existe una diferencia más evidente entre **tasa de abandono y volumen de actividad**.
+
+Una categoría con 95% de abandono pero muy pocos carritos no representa necesariamente una oportunidad mayor que una categoría con 70% de abandono y miles de carritos.
+
+Por ello, la priorización futura deberá considerar:
+
+> **Abandonment Rate + Cart Volume**
+
+y posteriormente variables como precio, producto y categoría.
+
+---
+
+## 6.6 Evolución temporal del abandono
+
+Se calculó la tasa general de abandono de carrito por mes.
+
+La tasa mensual observada se mantuvo aproximadamente entre:
+
+- **82.45%** → mínimo
+- **87.25%** → máximo
+
+### Abandono vs. Revenue
+
+Se realizaron dos análisis exploratorios:
+
+#### Abandonment Rate vs Revenue
+
+No se observó una relación lineal clara entre la **tasa de abandono mensual** y el revenue.
+
+Conclusión:
+
+> No existe evidencia suficiente para afirmar que un mayor porcentaje de abandono implique necesariamente un menor revenue.
+
+No debe interpretarse como evidencia de que el abandono no afecta al revenue; únicamente indica que **no se observa una relación lineal clara durante el período analizado**.
+
+#### Abandoned Sessions vs Revenue
+
+Se observó una relación positiva entre el número absoluto de sesiones abandonadas y el revenue.
+
+Sin embargo, esta relación puede estar explicada por el **volumen general de actividad**:
+
+`Más tráfico → más carritos → más abandonos + más oportunidades de compra → más revenue`
+
+Por esta razón, no se considera evidencia de una relación causal o de negocio entre abandono y revenue.
+
+### Aprendizaje metodológico
+
+Para comparar períodos con distinto volumen de actividad, las **tasas y proporciones suelen ser más informativas que los conteos absolutos**.
+
+---
+
+# Nueva línea analítica — Revenue Forecasting
+
+Durante el análisis exploratorio se realizaron correlaciones entre variables de actividad y revenue.
+
+## Purchase Events → Revenue
+
+Se realizó primero una comparación mensual y posteriormente una comparación diaria.
+
+Para el análisis diario se creó:
+
+`daily_purchase`
+
+con:
+
+- `purchase_events`
+- `revenue`
+- `buyers`
+
+agregados por `date`.
+
+Se obtuvo:
+
+> **Correlación de Pearson diaria = 0.969**
+
+El scatterplot mostró una relación lineal positiva muy fuerte entre `purchase_events` y `revenue`.
+
+### Interpretación
+
+La relación es esperable debido a la propia estructura del dataset:
+
+`Purchase Events × precio promedio ≈ Revenue`
+
+Por tanto, existe un componente **estructural/mecánico** importante.
+
+No debe interpretarse directamente como evidencia de que `purchase_events` sea un predictor útil de revenue futuro.
+
+Sin embargo, el resultado abre una línea de investigación:
+
+> **Predecir el volumen futuro de compras y utilizarlo posteriormente para estimar revenue.**
+
+---
+
+## Sessions → Revenue
+
+También se exploró la relación entre el número de sesiones y revenue.
+
+Se observó una relación positiva y cierta linealidad, aunque considerablemente menos fuerte que la encontrada entre `purchase_events` y revenue.
+
+Se identificó al menos un posible punto atípico que afecta la relación.
+
+### Hipótesis futura
+
+Investigar si variables de tráfico y conversión pueden utilizarse para realizar **forecasting de ingresos**:
+
+```text
+Sesiones
+   ↓
+Conversiones esperadas
+   ↓
+Purchase Events esperados
+   ↓
+Revenue esperado
