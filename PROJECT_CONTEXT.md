@@ -1256,3 +1256,309 @@ Conversiones esperadas
 Purchase Events esperados
    ↓
 Revenue esperado
+
+# PROJECT CONTEXT — Actualización: Insights CRO
+
+## 7. Insights CRO
+
+La sección 7 tiene como objetivo traducir los hallazgos obtenidos durante el análisis del Customer Journey, comportamiento temporal y abandono en **oportunidades de optimización CRO**.
+
+Los insights se consideran **hipótesis de optimización**, no causas comprobadas. El dataset permite identificar patrones y señales de oportunidad, pero no permite establecer causalidad por sí solo.
+
+---
+
+## 7.1 Principales oportunidades CRO
+
+### Insight 1 — View → Cart como oportunidad prioritaria
+
+KPIs relevantes:
+
+- View Rate: **94.41%**
+- View → Cart: **23.07%**
+- Cart → Purchase: **15.91%**
+- Purchase Rate: **3.46%**
+
+La transición de `view` a `cart` representa una oportunidad importante de optimización, ya que una proporción considerable de las sesiones que visualizan productos no desarrolla una acción de intención de compra.
+
+Además, durante el análisis temporal se observó una disminución del `View → Cart` a lo largo del período, mientras que `Cart → Purchase` presentó un comportamiento relativamente más estable.
+
+### Hipótesis CRO
+
+> Mejoras en la presentación del producto, propuesta de valor, precio, disponibilidad, información o llamadas a la acción podrían incrementar la proporción de usuarios que pasan de `view` a `cart`.
+
+### Acción propuesta
+
+Realizar una auditoría de las páginas de producto, priorizando productos o categorías con:
+
+- alto volumen de views;
+- bajo `View → Cart`;
+- alto abandono posterior.
+
+---
+
+## 7.2 Insight 2 — Elevado abandono después del carrito
+
+Aproximadamente **87% de las sesiones con carrito no registran una compra dentro de la misma sesión**.
+
+Esto representa una señal importante de pérdida de conversión entre la intención de compra y la finalización de la transacción.
+
+### Hipótesis CRO
+
+> Puede existir fricción entre el momento en que el usuario añade un producto al carrito y el momento en que debe completar la compra.
+
+### Acción propuesta
+
+Realizar una auditoría cualitativa del flujo:
+
+`Cart → Checkout → Datos → Pago → Confirmación`
+
+evaluando:
+
+- cantidad de pasos;
+- claridad de la información;
+- costos adicionales;
+- disponibilidad;
+- métodos de pago;
+- confianza;
+- errores;
+- experiencia móvil.
+
+No se establece que ninguno de estos factores sea la causa del abandono. Son elementos a investigar.
+
+---
+
+## 7.3 Insight 3 — Oportunidad potencial de recuperación
+
+El análisis identificó:
+
+- Usuarios que abandonaron: **35,791**
+- Usuarios recuperados posteriormente: **6,525**
+- Recovery Rate: **18.23%**
+
+Esto demuestra que una sesión abandonada no representa necesariamente una pérdida definitiva del usuario.
+
+### Hipótesis Marketing/CRO
+
+> Los usuarios que abandonan podrían responder favorablemente a mecanismos de recuperación posteriores.
+
+### Investigación futura
+
+Antes de implementar estrategias de remarketing o recuperación, estudiar:
+
+- tiempo hasta la compra;
+- producto abandonado;
+- categoría;
+- comportamiento posterior;
+- frecuencia de visitas;
+- número de sesiones posteriores.
+
+---
+
+## 7.4 Insight 4 — Diferencias de abandono por producto y categoría
+
+El abandono presenta diferencias importantes dentro del catálogo.
+
+### Productos
+
+- Se identificaron productos con hasta **100% de abandono**.
+- Los 10 productos con mayores tasas presentan aproximadamente **96%–98%** de abandono.
+- Los productos con menores tasas presentan aproximadamente **62.3%–70%**.
+
+Los productos con mayor abandono no necesariamente presentan menor volumen de sesiones con carrito.
+
+### Categorías
+
+- Las categorías con mayores tasas presentan aproximadamente **90%–98%**.
+- Las categorías con menores tasas presentan aproximadamente **35.7%–55%**.
+- Las categorías con mayores tasas presentan generalmente menor volumen de sesiones con carrito.
+
+### Implicación
+
+La priorización no debe basarse únicamente en la tasa de abandono.
+
+Debe considerar:
+
+> **Tasa de abandono + volumen de carritos + potencial económico**
+
+---
+
+## 7.5 Insight 5 — Comportamiento temporal diferenciado
+
+El análisis intradía identificó un comportamiento diferente entre las etapas del Customer Journey:
+
+- `View → Cart`: mayores niveles aproximadamente entre **21:00 y 01:00**.
+- `Cart → Purchase`: mayores niveles principalmente durante el período diurno.
+- Tráfico, revenue y sesiones con compra: mayor concentración durante el período diurno.
+
+### Hipótesis
+
+> Algunos usuarios podrían desarrollar intención de compra durante la noche y completar posteriormente la compra durante el día.
+
+Esta hipótesis **no ha sido validada a nivel individual**.
+
+### Acción futura
+
+Investigar utilizando:
+
+- `user_id`;
+- `user_session`;
+- `event_time`;
+- `product_id`.
+
+El objetivo será identificar si existe el patrón:
+
+`View/Cart nocturno → Compra posterior`
+
+y medir:
+
+- proporción de usuarios;
+- tiempo entre intención y compra;
+- hora de inicio y finalización;
+- comportamiento entre sesiones;
+- productos/categorías involucrados.
+
+**Prioridad:** hipótesis relevante para el futuro notebook de Customer Analysis.
+
+---
+
+## 7.6 Insight 6 — El abandono no debe analizarse únicamente mediante revenue
+
+Se encontró:
+
+- `Abandonment Rate` vs Revenue: **sin relación lineal evidente**.
+- `Abandoned Sessions` vs Revenue: **relación positiva**.
+
+La relación positiva entre sesiones abandonadas y revenue puede estar explicada por el volumen general de actividad:
+
+`Más tráfico → más carritos → más abandonos + más oportunidades de compra → más revenue`
+
+Por lo tanto:
+
+> El número absoluto de abandonos no debe utilizarse como indicador aislado del desempeño comercial.
+
+Para CRO es preferible considerar conjuntamente:
+
+- tasas de conversión;
+- volumen;
+- funnel;
+- revenue;
+- potencial económico.
+
+---
+
+# 7.7 Priorización de oportunidades CRO
+
+Las oportunidades identificadas se priorizan inicialmente de la siguiente manera:
+
+| Oportunidad | Evidencia | Impacto potencial | Necesidad de validación |
+|---|---|---|---|
+| Optimizar `View → Cart` | Alta | Alta | Alta |
+| Auditar checkout | Alta | Alta | Alta |
+| Recuperación de usuarios | Media-Alta | Media-Alta | Alta |
+| Productos con alto abandono | Alta | Variable | Alta |
+| Categorías con alto abandono | Alta | Variable | Alta |
+| Comportamiento nocturno → compra diurna | Media | Potencialmente alta | Muy alta |
+
+Los niveles de impacto representan una **priorización analítica inicial**, no resultados demostrados.
+
+---
+
+# 7.8 Framework de experimentación CRO
+
+Las recomendaciones CRO deberán seguir el flujo:
+
+`Evidencia → Hipótesis → Intervención → Experimento → Resultado`
+
+En lugar de recomendar directamente cambios, se plantea:
+
+1. Identificar una señal de fricción.
+2. Formular una hipótesis.
+3. Diseñar una intervención.
+4. Validar mediante experimentación.
+5. Medir el impacto sobre conversión.
+6. Implementar o descartar según resultados.
+
+### Ejemplos de hipótesis
+
+**Optimización de página de producto**
+
+> Mejorar la claridad de la información y propuesta de valor podría incrementar `View → Cart`.
+
+**Optimización del checkout**
+
+> Reducir posibles puntos de fricción en checkout podría incrementar `Cart → Purchase`.
+
+**Recuperación**
+
+> Una intervención posterior al abandono podría incrementar la proporción de usuarios que regresan y realizan una compra.
+
+---
+
+# 7.9 Principio metodológico CRO
+
+Las recomendaciones deben mantener una separación clara entre:
+
+`Evidencia → Hipótesis → Acción → Validación`
+
+No se debe afirmar:
+
+> "El checkout está causando el abandono."
+
+Debe plantearse:
+
+> "Los datos justifican investigar el checkout como posible fuente de fricción."
+
+Posteriormente:
+
+> "La investigación cualitativa permitirá formular una hipótesis concreta."
+
+Y finalmente:
+
+> "La hipótesis deberá validarse mediante experimentación."
+
+---
+
+# Estado actual del notebook 03_customer_journey
+
+El notebook cuenta actualmente con:
+
+- Radiografía de sesiones.
+- Customer Journey / Funnel.
+- KPIs de tráfico y conversión.
+- KPIs de facturación.
+- Análisis temporal mensual.
+- Análisis semanal.
+- Análisis intradía.
+- Interpretación temporal de negocio.
+- Abandono a nivel sesión.
+- Recuperación posterior.
+- Abandono por producto.
+- Abandono por categoría.
+- Evolución temporal del abandono.
+- Interpretación de negocio del abandono.
+- Insights CRO.
+- Exploraciones adicionales de correlación con revenue.
+
+## Líneas futuras identificadas
+
+### Customer Analysis
+
+Prioridad inmediata:
+
+- validar la hipótesis de intención nocturna → compra diurna;
+- analizar comportamiento entre múltiples sesiones;
+- estudiar tiempo entre abandono y recuperación;
+- identificar patrones de comportamiento a nivel usuario.
+
+### Revenue Forecasting
+
+Línea de investigación futura:
+
+- utilizar granularidad diaria;
+- estudiar predictores disponibles antes de la conversión;
+- evaluar forecasting de purchase events;
+- posteriormente estimar revenue;
+- evaluar outliers, tendencia, estacionalidad, autocorrelación y data leakage;
+- realizar validación temporal fuera de muestra.
+
+Se obtuvo una correlación diaria de **0.969 entre `purchase_events` y `revenue`**, pero se reconoce que esta relación posee un componente estructural debido a que el revenue se obtiene de los precios asociados a los eventos de compra. Por ello, no se considera todavía evidencia suficiente de capacidad predictiva útil.
