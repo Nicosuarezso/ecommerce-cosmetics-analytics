@@ -1,1564 +1,250 @@
-# Estructura del proyecto
-ecommerce-cosmetics-analytics/
-│
-├── data/
-│   ├── raw/
-│   │   └── .gitkeep
-│   │
-│   ├── interim/
-│   │   └── .gitkeep
-│   │
-│   └── processed/
-│       └── .gitkeep
-│
-├── notebooks/
-│   ├── 01_data_understanding.ipynb
-│   ├── 02_data_quality.ipynb
-│   ├── 03_customer_journey_analysis.ipynb
-│   ├── 04_customer_analysis.ipynb
-│   ├── 05_product_analysis.ipynb
-│   ├── 06_rfm_segmentation.ipynb
-│   ├── 07_cohort_analysis.ipynb
-│   ├── 08_ltv_analysis.ipynb
-│   ├── 09_advanced_analytics.ipynb
-│   └── 10_ml_solution.ipynb
-│
-├── src/
-│   ├── __init__.py
-│   │
-│   ├── data/
-│   │   ├── __init__.py
-│   │   ├── loading.py
-│   │   └── cleaning.py
-│   │
-│   ├── analysis/
-│   │   ├── __init__.py
-│   │   ├── funnel.py
-│   │   ├── customers.py
-│   │   ├── products.py
-│   │   ├── rfm.py
-│   │   ├── cohorts.py
-│   │   └── ltv.py
-│   │
-│   └── models/
-│       ├── __init__.py
-│       ├── preprocessing.py
-│       ├── train.py
-│       └── evaluate.py
-│
-├── reports/
-│   ├── figures/
-│   └── business_report.md
-│
-├── models/
-│
-├── README.md
-├── PROJECT_CONTEXT.md
-├── requirements.txt
-├── .gitignore
-└── LICENSE
+# Contexto del proyecto — E-commerce Cosmetics Analytics
 
-# PROJECT CONTEXT
+> Documento de continuidad para retomar el proyecto en un chat nuevo. Resume el estado vigente, las decisiones metodológicas y el trabajo priorizado; no es una bitácora cronológica.
 
-## 1. Contexto del proyecto
+## 1. Propósito y objetivo de negocio
 
-Este proyecto analiza los datos transaccionales de un e-commerce del sector cosméticos que ha experimentado una evolución plana durante los últimos meses.
+El proyecto analiza la actividad de un e-commerce de cosméticos para identificar oportunidades de crecimiento de la facturación. El negocio ha presentado una evolución plana y dispone de cinco meses de datos transaccionales y de navegación.
 
-La empresa ha contratado un equipo de consultoría analítica para comprender el comportamiento de sus usuarios, clientes y productos, identificar oportunidades de crecimiento y proponer acciones de CRO (Conversion Rate Optimization) basadas en datos.
+Las palancas de crecimiento son:
 
-El análisis se realizará sobre los datos correspondientes a los últimos tres meses de actividad del e-commerce.
+1. Más clientes: aumentar tráfico y conversión.
+2. Mayor frecuencia de compra: recurrencia, retención y valor por cliente.
+3. Mayor ticket: más productos por compra y venta cruzada.
 
-Actualmente se dispone de una base de datos en formato `.db` con aproximadamente 2 millones de registros. La estructura, tablas, variables, relaciones y calidad de los datos aún deben ser investigadas y documentadas durante la fase de comprensión de los datos.
+El análisis debe traducir la evidencia en hipótesis y recomendaciones accionables. No se debe asumir causalidad ni proponer Machine Learning sin demostrar primero que resuelve un problema de negocio mejor que una alternativa más simple.
 
----
+## 2. Datos y activos disponibles
 
-## 2. Objetivo de negocio
+### Fuente y cobertura
 
-El objetivo principal es identificar oportunidades que permitan incrementar la facturación global del e-commerce mediante una mejor comprensión del comportamiento de los usuarios y clientes.
+- Fuente original: SQLite \`data/raw/ecommerce.db\` (no modificar).
+- Periodo: 2019-10-01 a 2020-02-29, en UTC.
+- Cinco tablas mensuales con el mismo esquema: \`2019-Oct\`, \`2019-Nov\`, \`2019-Dec\`, \`2020-Jan\` y \`2020-Feb\`.
+- Registros originales: 2,095,076.
+- Dataset maestro intermedio: \`data/interim/master_events.db\`, tabla \`master_events\`, creada mediante \`UNION ALL\`.
+- Dataset analítico vigente: \`data/processed/ecommerce_clean.parquet\`.
 
-Las principales palancas de crecimiento consideradas son:
+### Variables
 
-1. **Más clientes**
-   - Incrementar visitas.
-   - Mejorar la tasa de conversión.
+\`event_time\`, \`event_type\`, \`product_id\`, \`category_id\`, \`category_code\`, \`brand\`, \`price\`, \`user_id\` y \`user_session\`.
 
-2. **Mayor frecuencia de compra**
-   - Incrementar la recurrencia.
-   - Reducir el abandono de clientes.
-   - Aumentar el valor generado por cada cliente.
+\`index\` existía en la fuente, pero se eliminó del dataset analítico: se repite entre meses y no es un identificador global de evento.
 
-3. **Mayor ticket medio**
-   - Incrementar el número de productos por compra.
-   - Favorecer la venta cruzada.
-   - Identificar oportunidades de incremento del valor de cada pedido.
+### Granularidad e interpretación
 
----
+Cada fila representa un evento asociado a un usuario, sesión, producto y momento temporal. Los únicos eventos válidos son \`view\`, \`cart\`, \`remove_from_cart\` y \`purchase\`. Los datos no contienen \`order_id\`; un evento \`purchase\` representa una compra de producto observada, no necesariamente una orden ni una unidad física.
 
-## 3. Objetivos analíticos
+## 3. Calidad de datos y decisiones vigentes
 
-El proyecto busca analizar el customer journey completo del e-commerce, desde la llegada del usuario al sitio web hasta la conversión y posterior comportamiento de compra.
+El parquet limpio contiene 2,074,532 registros y 9 columnas. Se eliminaron 20,544 registros: 11 \`purchase\` con precio negativo y 20,533 eventos no-compra con precio igual a cero. \`event_time\` fue validado como \`datetime64[ns, UTC]\` sin valores inválidos. No hay filas completamente duplicadas ni duplicados al excluir \`index\`.
 
-Entre las principales áreas de análisis se encuentran:
+| Aspecto | Estado / decisión |
+|---|---|
+| \`category_code\` | 98.35% missing; ausencia estructural a nivel producto. No imputar ni usar como categoría principal. |
+| \`category_id\` | 100% completo; referencia categórica principal. |
+| \`brand\` | 42.56% missing; conservar nulos, sin imputación. |
+| \`user_session\` | 506 missing (0.02%); conservar por ahora y tratar explícitamente al agregar por sesión. |
+| Identificadores | 46,038 productos, 508 categorías y 163,936 usuarios en la validación de calidad. Sin ceros ni negativos. |
+| Precio | Analizar revenue solo desde eventos \`purchase\`; no hay compras con precio cero tras limpieza. |
 
-### Customer Journey
+## 4. Decisiones metodológicas transversales
 
-- Comprender el proceso típico de compra.
-- Analizar el comportamiento de los usuarios durante las sesiones.
-- Analizar views, productos añadidos al carrito y compras.
-- Identificar puntos de abandono dentro del funnel.
-- Analizar la evolución temporal de los principales indicadores.
+- Separar siempre **evidencia**, **hipótesis**, **acción** y **validación**.
+- Las métricas agregadas describen asociaciones; no prueban causas.
+- Usar \`user_session\` como unidad de análisis del Customer Journey. Es la sesión proporcionada por la fuente y su reasignación con una regla de 30 minutos alteraría sustancialmente los resultados.
+- No usar la diferencia entre primer y último evento como duración de sesión: existen sesiones de hasta ~151 días y no representa navegación real.
+- \`remove_from_cart\` es una señal de fricción, no abandono por sí misma.
+- Revenue = suma de \`price\` en eventos \`purchase\`. No llamar AOV al valor medio por evento de compra, porque no existe \`order_id\`.
+- Al priorizar oportunidades, combinar tasa, volumen y potencial económico; no ordenar solo por un porcentaje extremo con pocas observaciones.
 
-### Clientes
+## 5. Customer Journey — trabajo completado
 
-- Analizar el comportamiento de compra de los clientes.
-- Identificar diferentes perfiles de clientes.
-- Analizar frecuencia de compra y gasto.
-- Identificar clientes de mayor valor.
-- Analizar recurrencia y retención.
-- Estimar LTV cuando los datos disponibles lo permitan.
-- Evaluar oportunidades de personalización de campañas.
+El notebook \`notebooks/03_customer_journey_analysis.ipynb\` tiene completados:
 
-### Productos
+- radiografía de sesiones;
+- funnel y KPIs de tráfico, conversión, fricción y facturación;
+- análisis mensual, semanal e intradía;
+- abandono de carrito y recuperación posterior;
+- abandono por producto y categoría;
+- evolución temporal de abandono;
+- interpretación de negocio e insights CRO;
+- exploración inicial de correlaciones de revenue.
 
-- Identificar los productos más vendidos.
-- Detectar productos con bajo o nulo volumen de ventas.
-- Analizar la relación entre precio y volumen de ventas.
-- Identificar productos con muchas visitas pero pocas compras.
-- Analizar productos retirados recurrentemente del carrito.
-- Evaluar oportunidades de venta cruzada y recomendación personalizada.
+### Línea base de KPIs
 
----
-
-## 4. Activos analíticos potenciales
-
-El contexto inicial del proyecto plantea la posibilidad de desarrollar:
-
-- Segmentación RFM.
-- Análisis de cohortes.
-- Análisis de LTV.
-- Sistema de recomendación.
-- Modelos de Machine Learning.
-
-Estos activos serán considerados como **oportunidades analíticas y no como entregables obligatorios predeterminados**.
-
-La viabilidad y utilidad de cada uno dependerá de la estructura, calidad, granularidad y cobertura temporal de los datos, así como de su potencial impacto sobre el negocio.
-
----
-
-## 5. Machine Learning
-
-La empresa también está interesada en evaluar la posibilidad de implementar una solución de Machine Learning.
-
-El problema de Machine Learning **no está definido previamente**.
-
-La selección del problema y del modelo será una decisión analítica que deberá surgir del análisis exploratorio, la comprensión del negocio y las características de los datos.
-
-Entre las posibles oportunidades se encuentran, de manera exploratoria:
-
-- Predicción de propensión de compra.
-- Predicción de churn.
-- Forecasting.
-- Recomendación de productos.
-- Otras aplicaciones que puedan surgir durante el análisis.
-
-La pregunta principal será:
-
-> **¿Qué solución de Machine Learning tiene mayor potencial para generar impacto de negocio dadas las características reales de los datos?**
-
-No se implementará Machine Learning simplemente por disponer de los datos. Primero se deberá demostrar que existe un problema de negocio adecuado y que una solución predictiva aporta valor frente a alternativas analíticas más simples.
-
----
-
-## 6. Alcance
-
-El proyecto contempla las siguientes etapas:
-
-1. Comprensión del negocio.
-2. Comprensión de la estructura de los datos.
-3. Evaluación de la calidad de los datos.
-4. Definición de preguntas analíticas.
-5. Análisis exploratorio.
-6. Análisis del customer journey.
-7. Análisis de clientes.
-8. Análisis de productos.
-9. Segmentación y análisis de cohortes.
-10. Análisis de LTV, cuando sea viable.
-11. Identificación y priorización de oportunidades de negocio.
-12. Evaluación de oportunidades de Machine Learning.
-13. Desarrollo y evaluación de la solución analítica seleccionada.
-14. Traducción de resultados a recomendaciones de negocio.
-15. Documentación y comunicación de resultados.
-
----
-
-## 7. Estado actual del proyecto
-
-### 7.1 Información confirmada
-
-- Sector: e-commerce de cosméticos.
-- Contexto: evolución plana durante los últimos meses.
-- Periodo disponible: 1 de octubre de 2019 a 29 de febrero de 2020.
-- Formato de datos: base de datos SQLite `.db`.
-- Número de tablas: 5.
-- Volumen total: 2,095,076 registros.
-- Las cinco tablas representan meses consecutivos y presentan el mismo esquema.
-- Todas las tablas contienen las siguientes variables:
-  - `index`
-  - `event_time`
-  - `event_type`
-  - `product_id`
-  - `category_id`
-  - `category_code`
-  - `brand`
-  - `price`
-  - `user_id`
-  - `user_session`
-
-La base de datos contiene cuatro tipos de eventos:
-
-| Evento | Registros | Participación |
-|---|---:|---:|
-| `view` | 965,893 | 46.10% |
-| `cart` | 585,854 | 27.96% |
-| `remove_from_cart` | 415,754 | 19.84% |
-| `purchase` | 127,575 | 6.09% |
-| **Total** | **2,095,076** | **100%** |
-
-Los eventos observados permiten representar diferentes etapas del customer journey, incluyendo visualización de productos, adición al carrito, eliminación del carrito y compra.
-
-Se confirmó que:
-
-- Un usuario puede tener múltiples sesiones.
-- Un usuario tiene un promedio de 2.74 sesiones en el periodo analizado.
-- Se observó un máximo de 3,368 sesiones asociadas a un único `user_id`.
-- Una sesión puede contener múltiples eventos.
-- Una sesión contiene un promedio de 4.67 eventos.
-- Se observó un máximo de 5,411 eventos asociados a una única sesión.
-
-Estos valores extremos requieren investigación adicional para determinar si representan comportamiento real, usuarios/sesiones atípicas o posibles problemas de tracking.
-
-
-### 7.2 Interpretación actual de la estructura
-
-Las observaciones iniciales sugieren que cada fila representa un evento asociado a un usuario, una sesión y un producto en un momento determinado.
-
-Esta interpretación todavía debe validarse mediante un análisis más profundo de la granularidad, los identificadores, los eventos y los posibles casos especiales.
-
-Las cinco tablas mensuales parecen representar particiones temporales del mismo tipo de información, dado que presentan el mismo esquema.
-
-### 7.3 Información todavía por investigar
-
-- Número exacto de registros de cada tabla.
-- Distribución de eventos.
-- Granularidad exacta de los registros.
-- Unicidad y comportamiento de `index`.
-- Unicidad y comportamiento de `user_id`.
-- Unicidad y comportamiento de `user_session`.
-- Posibles relaciones entre usuarios, sesiones y eventos.
-- Cobertura temporal exacta de cada tabla.
-- Valores faltantes.
-- Duplicados.
-- Calidad de `event_time`.
-- Distribución y valores de `event_type`.
-- Comportamiento de `product_id`, `category_id`, `category_code` y `brand`.
-- Comportamiento y distribución de `price`.
-- Posibles inconsistencias entre tablas mensuales.
-- Viabilidad de los análisis RFM, cohortes, LTV y recomendación.
-- Oportunidades de Machine Learning.evolución plana durante los últimos meses.
-- Periodo disponible: octubre de 2019 a febrero de 2020.
-- Formato de datos: base de datos SQLite `.db`.
-
-### 7.4 Observaciones iniciales
-
-- Existe variabilidad en el volumen mensual de eventos.
-- `2019-Dec` presenta el menor número de registros del periodo.
-- Esta variación no debe interpretarse todavía como una variación del desempeño comercial, ya que el conteo corresponde a eventos y no directamente a visitas, sesiones, conversiones, clientes, pedidos o ingresos.
-
-La evidencia inicial sugiere que cada fila representa un evento asociado a un usuario, una sesión y un producto en un momento determinado.
-
-Sin embargo, todavía no está confirmado que cada registro corresponda a una acción humana única. Se observaron eventos `remove_from_cart` consecutivos sobre el mismo producto en segundos sucesivos, por lo que será necesario investigar la granularidad y posibles duplicados o comportamientos particulares del sistema de tracking.
-
-Los porcentajes de eventos no deben interpretarse como tasas de conversión o funnel, ya que una misma sesión puede generar múltiples eventos de cada tipo.
-
-### 7.5 Cobertura temporal
-
-| Tabla | Registros | Inicio | Fin |
-|---|---:|---|---|
-| `2019-Oct` | 407,925 | 2019-10-01 00:01:46 UTC | 2019-10-31 23:56:54 UTC |
-| `2019-Nov` | 462,833 | 2019-11-01 00:04:51 UTC | 2019-11-30 23:59:27 UTC |
-| `2019-Dec` | 351,304 | 2019-12-01 00:01:02 UTC | 2019-12-31 23:59:52 UTC |
-| `2020-Jan` | 443,224 | 2020-01-01 00:01:31 UTC | 2020-01-31 23:58:26 UTC |
-| `2020-Feb` | 429,790 | 2020-02-01 00:01:43 UTC | 2020-02-29 23:59:54 UTC |
-| **Total** | **2,095,076** | **2019-10-01** | **2020-02-29** |
-
-### Por investigar
-
-- Número y nombre de tablas.
-- Número exacto de registros por tabla.
-- Columnas disponibles.
-- Tipos de datos.
-- Claves primarias y foráneas.
-- Relaciones entre entidades.
-- Granularidad de cada tabla.
-- Calidad de los datos.
-- Valores faltantes.
-- Duplicados.
-- Cobertura temporal exacta.
-- Identificación de usuarios y clientes.
-- Disponibilidad de información de sesiones y eventos.
-- Disponibilidad de precios y pedidos.
-- Viabilidad de RFM, cohortes y LTV.
-- Viabilidad de las diferentes alternativas de Machine Learning.
-
----
-
-### 7.6 Dataset maestro
-
-Debido a que las cinco tablas mensuales presentan el mismo esquema, se consolidaron mediante `UNION ALL` en una única tabla maestra denominada `master_events`.
-
-La tabla maestra se almacenó en una nueva base de datos:
-
-`data/interim/master_events.db`
-
-Esta base de datos contiene la tabla:
-
-`master_events`
-
-con los 2,095,076 registros correspondientes al periodo octubre de 2019 a febrero de 2020.
-
-La base de datos original `data/raw/ecommerce.db` se mantiene sin modificaciones.
-
-La separación entre `raw` e `interim` permite conservar los datos originales y utilizar una versión consolidada para las siguientes etapas del proyecto.
-
-### Flujo de datos actual
-
-```text
-data/raw/ecommerce.db
-        │
-        │ Consolidación de tablas mensuales
-        │ mediante UNION ALL
-        ↓
-data/interim/master_events.db
-        │
-        └── master_events
-                │
-                ↓
-       02_data_quality.ipynb
-
-### 7.6 Hallazgos iniciales de Data Quality
-
-#### `category_code`
-
-`category_code` presenta 2,060,411 valores missing, equivalentes al 98.35% de los registros.
-
-El análisis a nivel de producto muestra que el problema es estructural:
-
-| Estado | Productos | % |
-|---|---:|---:|
-| Completamente missing | 45,527 | 98.89% |
-| Completo | 507 | 1.10% |
-| Parcial | 4 | 0.01% |
-| **Total** | **46,038** | **100%** |
-
-La ausencia del atributo es prácticamente total a nivel de producto, por lo que no parece tratarse de un problema aleatorio de eventos.
-
-No se tomará todavía ninguna decisión de imputación o eliminación. Se investigará si `category_id` puede proporcionar una alternativa analítica más fiable.
-
-#### `brand`
-
-`brand` presenta 891,646 valores missing, equivalentes al 42.56% de los registros.
-
-A nivel de producto:
-
-| Estado | Productos | % |
-|---|---:|---:|
-| Completo | 22,169 | 48.15% |
-| Completamente missing | 20,148 | 43.77% |
-| Parcial | 3,721 | 8.08% |
-| **Total** | **46,038** | **100%** |
-
-A diferencia de `category_code`, existe un porcentaje relevante de productos con información parcial de marca. Estos productos requieren investigación adicional para determinar si existe una inconsistencia en los registros o una característica propia de la fuente de datos.
-
-#### Interpretación metodológica
-
-Los valores missing se están evaluando teniendo en cuenta la granularidad de cada variable. Para atributos asociados conceptualmente al producto, como `brand` y `category_code`, se analiza también la completitud a nivel de `product_id` y no únicamente a nivel de evento.
-
-### 7.7 Duplicados y unicidad
-
-Se realizaron tres comprobaciones diferentes:
-
-- Filas completamente duplicadas: `0`.
-- Registros duplicados excluyendo `index`: `0`.
-- Valores duplicados de `index`: `363,983`.
-
-La duplicación de `index` se debe a la consolidación de las cinco tablas mensuales mediante `UNION ALL`. Los mismos valores de `index` aparecen en diferentes meses, llegando algunos a aparecer cinco veces, una por cada tabla mensual.
-
-Por lo tanto:
-
-- No se detectaron duplicados reales de registros.
-- `index` no debe considerarse un identificador global de evento.
-- La repetición de `index` no será utilizada como criterio para eliminar registros.
-- Se evaluará posteriormente si `index` debe conservarse en el dataset analítico o eliminarse por no aportar información de negocio.
-
-## 8. Data Quality — Estado y decisiones
-
-### 8.1 Dataset analizado
-
-El análisis de calidad se realizó sobre la tabla maestra `master_events`, consolidada desde las cinco tablas mensuales originales.
-
-Dataset inicial:
-
-- Registros: 2,095,076
-- Columnas: 10
-- Periodo: octubre 2019 a febrero 2020
-
-El dataset fue cargado a Pandas para realizar las transformaciones y análisis de calidad.
-
-### 8.2 Transformaciones de tipos
-
-- `event_time` fue convertido de texto a `datetime64[ns, UTC]`.
-- Se verificó que la conversión fuera correcta.
-- No se detectaron valores `NaT`.
-- El rango temporal coincide con el periodo esperado.
-
-### 8.3 Completitud
-
-| Variable | Missing | % Missing | Decisión |
-|---|---:|---:|---|
-| `event_time` | 0 | 0.00% | Mantener |
-| `event_type` | 0 | 0.00% | Mantener |
-| `product_id` | 0 | 0.00% | Mantener |
-| `category_id` | 0 | 0.00% | Mantener |
-| `category_code` | 2,060,411 | 98.35% | Mantener |
-| `brand` | 891,646 | 42.56% | Mantener |
-| `price` | 0 | 0.00% | Mantener |
-| `user_id` | 0 | 0.00% | Mantener |
-| `user_session` | 506 | 0.02% | Mantener por ahora |
-
-#### `category_code`
-
-El análisis a nivel de producto mostró que la ausencia es estructural:
-
-- 45,527 productos completamente missing.
-- 507 productos completos.
-- 4 productos con información parcial.
-
-Por tanto, no se realizará imputación de `category_code`.
-
-`category_id`, que presenta 100% de completitud, será utilizado como referencia categórica principal cuando sea necesario.
-
-#### `brand`
-
-A nivel de producto:
-
-- 22,169 productos tienen `brand` completo.
-- 20,148 productos tienen `brand` completamente missing.
-- 3,721 productos presentan información parcial.
-
-Se conservarán los valores missing. No se realizará imputación en esta etapa.
-
-### 8.4 Duplicados y unicidad
-
-- Filas completamente duplicadas: 0.
-- Registros duplicados excluyendo `index`: 0.
-- `index` presenta 363,983 valores duplicados.
-
-La duplicación de `index` se debe a que las cinco tablas mensuales fueron consolidadas mediante `UNION ALL` y el índice original no representa un identificador global de evento.
-
-Por lo tanto:
-
-- No se eliminaron registros por duplicación de `index`.
-- `index` fue eliminado del dataset analítico por no aportar información de negocio.
-
-### 8.5 Validación de eventos
-
-Los únicos valores encontrados en `event_type` fueron:
-
-- `view`
-- `cart`
-- `remove_from_cart`
-- `purchase`
-
-No se detectaron valores inválidos.
-
-### 8.6 Validación de identificadores
-
-No se detectaron:
-
-- `product_id` negativos.
-- `product_id` iguales a 0.
-- `category_id` negativos.
-- `category_id` iguales a 0.
-- `user_id` negativos.
-- `user_id` iguales a 0.
-
-Cardinalidad observada:
-
-- 46,038 productos.
-- 508 categorías.
-- 163,936 usuarios.
-
-### 8.7 Validación de precios
-
-Se detectaron:
-
-- 11 registros con `price < 0` (0.001%).
-- 20,533 registros con `price = 0` (0.98%).
-
-Los 11 registros con precio negativo correspondían a eventos `purchase`. Al no existir en el dataset un evento explícito de devolución que permita justificar estos valores, se consideraron inválidos para el análisis de ventas y fueron eliminados.
-
-Los 20,533 registros con `price = 0` correspondían exclusivamente a eventos:
-
-- `view`
-- `cart`
-- `remove_from_cart`
-
-No se encontraron compras con precio igual a 0. Estos registros fueron eliminados para evitar distorsiones en análisis posteriores relacionados con precio, ingresos, AOV y LTV.
-
-### 8.8 Dataset procesado
-
-Después de las transformaciones de Data Quality:
-
-- Registros iniciales: 2,095,076
-- Registros eliminados: 20,544
-- Registros finales: 2,074,532
-- Columnas finales: 9
-
-El dataset limpio fue exportado a:
-
-`data/processed/ecommerce_clean.parquet`
-
-El archivo Parquet conserva los tipos de datos, incluyendo `event_time` como datetime con timezone UTC.
-
-### 8.9 Estructura actual de datos
-
-```text
-data/
-├── raw/
-│   └── ecommerce.db
-│
-├── interim/
-│   └── master_events.db
-│
-└── processed/
-    └── ecommerce_clean.parquet
-
-## 8. Principio metodológico
-
-El proyecto seguirá una metodología orientada a la resolución de problemas reales de negocio.
-
-No se asumirá previamente que una técnica, modelo o algoritmo determinado sea la solución.
-
-Las decisiones analíticas deberán estar justificadas por:
-
-- El problema de negocio.
-- La evidencia encontrada en los datos.
-- La calidad y disponibilidad de la información.
-- La viabilidad técnica.
-- El potencial impacto sobre el negocio.
-
-El objetivo no es únicamente construir modelos, sino **utilizar datos para identificar oportunidades y apoyar mejores decisiones de negocio**.
-
-## 9. Customer Journey — decisiones metodológicas iniciales
-
-### 9.1 Unidad de análisis: sesión
-
-Para el análisis del customer journey se utilizará `user_session` como identificador de sesión, ya que es la unidad de sesión proporcionada por la fuente.
-
-Antes de adoptar esta decisión se evaluó su consistencia:
-
-- 446,054 sesiones únicas.
-- 446,047 sesiones están asociadas a un único usuario.
-- 6 sesiones están asociadas a 2 usuarios.
-- 1 sesión está asociada a 3 usuarios.
-- En total, únicamente 7 sesiones presentan múltiples usuarios, por lo que su impacto es marginal.
-
-También se evaluó una estrategia alternativa de *sessionization* basada en 30 minutos de inactividad. Esta metodología produjo 332,431 sesiones frente a las 446,054 sesiones originales, una reducción del 25.47%.
-
-Debido a que la sessionization de 30 minutos altera sustancialmente la estructura proporcionada por la fuente, se decidió conservar `user_session` como unidad de análisis.
-
-### 9.2 Limitación de duración de sesión
-
-Se detectaron algunas `user_session` con duraciones extremadamente elevadas. Algunas abarcan varios meses, llegando la duración máxima calculada a aproximadamente 217,502 minutos (~151 días).
-
-Esto indica que la diferencia entre el primer y último evento de `user_session` no puede interpretarse de forma fiable como duración real de una sesión de navegación.
-
-Por este motivo:
-
-- No se utilizará `duration_min` como métrica de sesión.
-- No se eliminarán sesiones únicamente por presentar una duración elevada.
-- No se aplicará una sessionization artificial para corregir este comportamiento.
-- El análisis se centrará en la presencia, volumen y comportamiento de los eventos dentro de cada `user_session`.
-
-### 9.3 Radiografía inicial de sesiones
-
-La tabla agregada de sesiones presenta los siguientes resultados:
-
-| Métrica | Media | Mediana | P75 | Máximo |
-|---|---:|---:|---:|---:|
-| Eventos | 4.65 | 1 | 3 | 2,793 |
-| Views | 2.16 | 1 | 2 | 1,005 |
-| Carts | 1.29 | 0 | 0 | 778 |
-| Remove from cart | 0.92 | 0 | 0 | 2,422 |
-| Purchases | 0.29 | 0 | 0 | 259 |
-
-Las distribuciones presentan un fuerte sesgo hacia la derecha. La sesión mediana contiene únicamente un evento, normalmente una visualización, mientras que una proporción reducida de sesiones concentra un volumen elevado de eventos.
-
-Esto sugiere que la mayoría de las sesiones presentan un comportamiento superficial y no avanzan hacia las etapas profundas del customer journey.
-
-### 9.4 Alcance preliminar de eventos por sesión
-
-Porcentaje de sesiones que contienen al menos un evento de cada tipo:
-
-| Evento | % de sesiones |
-|---|---:|
-| View | 94.41% |
-| Cart | 21.78% |
-| Remove from cart | 10.77% |
-| Purchase | 3.46% |
-
-Estos porcentajes son métricas descriptivas de presencia de eventos por sesión y no se consideran todavía tasas de conversión definitivas.
-
-Para el funnel se utilizará como estructura principal:
-
-**View → Cart → Purchase**
-
-`remove_from_cart` se analizará como una señal de fricción/abandono y no como una etapa obligatoria del funnel.
-
-### 9.5 Resultados descartados
-
-Durante la exploración inicial se calcularon métricas utilizando la primera versión de la tabla de sesiones, incluyendo duración de sesión y una clasificación preliminar de sesiones.
-
-Estas métricas fueron descartadas después de identificar las limitaciones de `user_session` para representar duración real de navegación.
-
-El valor de 3.46% de sesiones con compra se conserva únicamente como estadística descriptiva de presencia de eventos, pero no se interpreta todavía como una tasa de conversión final.
-
-### 9.6 Próximo paso
-
-Construir el Customer Journey/Funnel utilizando `user_session` como unidad de análisis.
-
-Se calcularán y analizarán:
-
-- sesiones que alcanzan cada etapa;
-- conversión View → Cart;
-- conversión Cart → Purchase;
-- conversión global de sesión;
-- abandono y señales de fricción asociadas a `remove_from_cart`.
-
-Las definiciones de cada KPI se establecerán antes de interpretar los resultados.
-## 10. Customer Journey — línea base de KPIs
-
-Se consolidaron los principales KPIs del Customer Journey utilizando `user_session`
-como unidad de análisis. Los indicadores se agrupan en tráfico, conversión,
-fricción y facturación.
-
-### 10.1 KPIs de tráfico y usuarios
-
-| KPI | Valor | Definición |
+| KPI | Valor | Definición / nota |
 |---|---:|---|
-| Sesiones | 446,054 | `user_session` únicas |
-| Usuarios únicos | 163,781 | `user_id` únicos |
+| Sesiones | 446,054 | \`user_session\` únicas |
+| Usuarios | 163,781 | \`user_id\` únicos en el análisis de journey |
 | Sesiones por usuario | 2.72 | Sesiones / usuarios |
-| View Rate | 94.41% | Sesiones con ≥1 `view` / sesiones totales |
-| View-only Rate | 75.57% | Sesiones cuya secuencia contiene únicamente `view` / sesiones totales |
+| View rate | 94.41% | Sesiones con al menos un \`view\` |
+| View-only rate | 75.57% | Sesiones con solo \`view\` |
+| Cart rate | 21.78% | Sesiones con al menos un \`cart\` |
+| Purchase rate | 3.46% | Sesiones con al menos un \`purchase\` |
+| View → Cart | 23.07% | Sesiones con cart / sesiones con view |
+| Cart → Purchase | 15.91% | Sesiones con purchase / sesiones con cart |
+| Cart remove rate | 49.46% | Sesiones con remove / sesiones con cart |
+| Purchase events | 127,564 | Eventos \`purchase\` tras limpieza |
+| Compradores | 11,040 | Usuarios con purchase |
+| Sesiones con compra | 15,452 | Sesiones con purchase |
+| Revenue | Bs 621,549.60 | Suma de precios de eventos \`purchase\` |
+| Revenue por comprador | Bs 56.30 | Revenue / compradores |
+| Valor medio por evento de compra | Bs 4.87 | No equivale a AOV por orden |
 
-### 10.2 KPIs de conversión
+### Lectura consolidada
 
-| KPI | Valor | Definición |
-|---|---:|---|
-| Cart Rate | 21.78% | Sesiones con ≥1 `cart` / sesiones totales |
-| Purchase Rate | 3.46% | Sesiones con ≥1 `purchase` / sesiones totales |
-| View → Cart | 23.07% | Sesiones con `cart` / sesiones con `view` |
-| Cart → Purchase | 15.91% | Sesiones con `purchase` / sesiones con `cart` |
+- El tráfico es mayoritariamente superficial: 75.57% de las sesiones contiene exclusivamente views.
+- La principal oportunidad del funnel es \`View → Cart\`: disminuyó durante el período, mientras que \`Cart → Purchase\` fue relativamente más estable.
+- El funnel no debe modelarse como una secuencia estricta: se observan recorridos como \`view → cart → view\` y \`cart → view → cart\`.
+- Noviembre de 2019 fue el mes con mayor revenue (~Bs 140,000); diciembre cayó (~Bs 100,000) y luego hubo recuperación. El valor medio por evento permaneció estable (~Bs 4.77–4.97), por lo que el revenue parece variar sobre todo con el volumen de eventos de compra.
+- La actividad y el revenue se concentran más entre martes y jueves; jueves tuvo el mayor revenue y purchase rate. Sábado tuvo menor actividad y conversión.
+- Intra-día: \`View → Cart\` es mayor aproximadamente entre 21:00–01:00, mientras que \`Cart → Purchase\`, tráfico, revenue y sesiones con compra se concentran en el período diurno.
 
-La métrica de Purchase Rate se interpreta como **conversión por sesión** y no
-como conversión tradicional por orden, debido a que el dataset no contiene un
-identificador explícito de transacción.
+## 6. Abandono y recuperación
 
-### 10.3 KPIs de fricción
+Definición de abandono intra-sesión: sesión con al menos un \`cart\` y sin \`purchase\` en esa misma \`user_session\`.
 
-| KPI | Valor | Definición |
-|---|---:|---|
-| Cart Remove Rate | 49.46% | Sesiones con `remove_from_cart` / sesiones con `cart` |
-| Remove/Cart Event Ratio | 71.39% | Eventos `remove_from_cart` / eventos `cart` |
-
-El Cart Remove Rate indica que aproximadamente la mitad de las sesiones que
-registran actividad en carrito también registran al menos una eliminación.
-
-Estas métricas **no se interpretan directamente como tasa de abandono de
-carrito**, ya que una sesión puede añadir, eliminar y volver a añadir productos
-antes de completar una compra.
-
-### 10.4 KPIs de ventas y facturación
-
-Se creó `df_purchases`, compuesto exclusivamente por eventos
-`event_type == "purchase"`.
-
-El dataset presenta una granularidad de **evento de producto comprado** y no
-contiene un `order_id` explícito. Por este motivo, algunos indicadores
-tradicionales de e-commerce, como AOV por orden, no pueden calcularse
-directamente.
-
-| KPI | Valor | Interpretación |
-|---|---:|---|
-| Purchase Events | 127,564 | Número de eventos `purchase` |
-| Compradores | 11,040 | `user_id` únicos con purchase |
-| Sesiones con compra | 15,452 | `user_session` únicas con purchase |
-| Revenue | 621,549.60 | Suma de `price` en eventos purchase |
-| Revenue por comprador | 56.30 | Revenue / compradores |
-| Valor medio por evento de compra | 4.87 | Revenue / purchase events |
-| Mediana por evento de compra | 3.00 | Mediana de `price` en purchase events |
-
-**Nota:** No se utilizará "Unidades vendidas" como KPI definitivo, ya que no se
-ha demostrado que cada evento `purchase` represente necesariamente una unidad
-física vendida.
-
-El valor medio de 4.87 se denomina **Valor medio por evento de compra** y no AOV
-tradicional, dado que no existe una variable que identifique órdenes.
-
-### 10.5 Hallazgos principales de Customer Journey
-
-Los principales resultados obtenidos hasta esta etapa son:
-
-1. El 75.57% de las sesiones son exclusivamente `view`, indicando un tráfico
-   predominantemente superficial.
-2. El 94.41% de las sesiones registra al menos un `view`.
-3. El 21.78% de las sesiones registra actividad en carrito.
-4. El 3.46% de las sesiones registra al menos un `purchase`.
-5. La conversión View → Cart es 23.07%.
-6. La conversión Cart → Purchase es 15.91%.
-7. El 49.46% de las sesiones con actividad de carrito registra al menos un
-   `remove_from_cart`.
-8. El journey observado no es estrictamente lineal. Existen secuencias como
-   `view → cart → view`, `view → cart → remove_from_cart` y
-   `cart → view → cart`.
-9. Por este motivo, el Customer Journey se analizará como un conjunto de
-   comportamientos y transiciones observadas dentro de las sesiones, evitando
-   asumir que todos los usuarios siguen un funnel lineal.
-10. La principal oportunidad preliminar parece encontrarse en la transición
-    desde visualización hacia carrito, aunque se requieren análisis posteriores
-    de clientes y productos para determinar las causas y cuantificar el impacto
-    económico.
-
-### 10.6 Limitaciones relevantes
-
-- `user_session` se utilizará como unidad de sesión, pero no como medida fiable
-  de duración.
-- No existe un `order_id` explícito.
-- No puede calcularse un AOV tradicional por orden con la información disponible.
-- Los eventos `purchase` se tratarán como eventos de compra, no necesariamente
-  como unidades físicas.
-- `remove_from_cart` se considera una señal de fricción y no una medida directa
-  de abandono.
-- Los resultados del Customer Journey describen comportamiento observado y no
-  establecen causalidad.
-
-### 10.7 Estado del proyecto
-
-**Customer Journey: COMPLETADO**
-
-Se dispone de una línea base de comportamiento, conversión, fricción y
-facturación para utilizar como referencia en los siguientes análisis.
-
-Próximas áreas de análisis:
-
-1. Análisis de clientes.
-2. Segmentación RFM.
-3. Análisis de cohortes.
-4. LTV y comportamiento de recompra.
-5. Análisis de productos.
-6. Sistema de recomendación.
-7. Evaluación de oportunidades de Machine Learning.
-
-## 11. Customer Journey — análisis temporal
-
-Se inició el análisis temporal del Customer Journey con el objetivo de identificar
-patrones de actividad, conversión y facturación que puedan aportar valor al equipo
-comercial y de marketing.
-
-El análisis temporal se dividió en:
-
-1. Tendencia mensual.
-2. Patrón semanal.
-3. Patrón intradía.
-4. Interpretación de negocio.
-
-### 11.1 Tendencia mensual
-
-Se analizaron mensualmente:
-
-- Sesiones.
-- Usuarios únicos.
-- Sesiones con carrito.
-- Sesiones con compra.
-- Purchase Rate.
-- View → Cart.
-- Cart → Purchase.
-- Purchase Events.
-- Revenue.
-- Valor medio por evento de compra.
-
-#### Principales observaciones
-
-**2019-11** destacó como un período particularmente fuerte:
-
-- Aumento de sesiones respecto a octubre.
-- Disminución considerable de usuarios únicos.
-- Purchase Rate superior al 4%, uno de los valores más altos del período.
-- View → Cart disminuyó respecto al mes anterior, aproximadamente de 27% a 24%.
-- Cart → Purchase alcanzó aproximadamente 17%, el valor más alto del período.
-
-Esto muestra que un mayor desempeño comercial no necesariamente implica una
-mejoría simultánea en todas las etapas del journey.
-
-Posteriormente se observó una disminución progresiva de:
-
-- Purchase Rate: aproximadamente de 4% hacia 3.2%.
-- View → Cart: aproximadamente de 27% hacia 22%.
-
-Mientras que Cart → Purchase permaneció relativamente estable.
-
-Esto genera como hipótesis de análisis que la disminución de la conversión global
-podría estar relacionada principalmente con una menor conversión de View → Cart,
-aunque no se establece causalidad.
-
-#### Revenue y Purchase Events
-
-2019-11 presentó el mayor revenue del período, aproximadamente Bs 140,000.
-
-En 2019-12 se observó una caída importante, hasta aproximadamente Bs 100,000,
-seguida posteriormente por una recuperación.
-
-La evolución de Revenue y Purchase Events presentó una trayectoria muy similar,
-lo que indica descriptivamente una fuerte asociación entre el volumen de eventos
-de compra y la facturación.
-
-Se analizó además el valor medio por evento de compra:
-
-| Mes | Valor medio por evento |
+| Métrica | Resultado |
 |---|---:|
-| 2019-10 | 4.869 |
-| 2019-11 | 4.768 |
-| 2019-12 | 4.968 |
-| 2020-01 | 4.923 |
-| 2020-02 | 4.870 |
+| Sesiones abandonadas | 84,581 |
+| Usuarios que abandonaron | 35,791 |
+| Tasa de abandono intra-sesión | ~87% |
+| Usuarios recuperados posteriormente | 6,525 |
+| Recovery rate | 18.23% |
+
+Un usuario recuperado tuvo una sesión abandonada y posteriormente al menos un evento \`purchase\`. Esto no prueba que haya comprado el mismo producto ni que la compra haya sido causada por una acción de recuperación.
+
+Resultados adicionales:
+
+- Existen productos con abandono muy alto (hasta 100%), pero la tasa aislada no basta para priorizar: debe combinarse con carritos, precio, categoría, marca y compras.
+- En categorías, el abandono alto suele coincidir con menor volumen. Usar al menos \`abandonment rate + cart volume\` para priorizar.
+- La tasa mensual de abandono se movió aproximadamente entre 82.45% y 87.25%. No se observó relación lineal clara entre tasa de abandono y revenue.
+- El conteo de sesiones abandonadas sí se asocia positivamente a revenue, pero probablemente por actividad general (\`más tráfico → más carritos y más compras\`); no interpretarlo como efecto causal.
 
-El valor medio permaneció relativamente estable durante todo el período,
-aproximadamente entre 4.77 y 4.97.
+## 7. Oportunidades CRO vigentes
 
-Por lo tanto, la variación mensual del revenue parece estar explicada
-principalmente por cambios en el volumen de eventos de compra, mientras que el
-valor medio por evento presenta poca variación.
+Estas son hipótesis priorizadas, no causas demostradas.
 
-Esta interpretación es descriptiva y no implica causalidad.
-
-### 11.2 Patrón semanal
-
-Se analizaron:
-
-- Sesiones.
-- Usuarios.
-- Events.
-- Sesiones con carrito.
-- Sesiones con compra.
-- Revenue.
-- Purchase Rate.
-- View → Cart.
-- Cart → Purchase.
-
-#### Tráfico
-
-La actividad se concentra principalmente entre martes y jueves:
-
-- Martes: 68,361 sesiones.
-- Miércoles: 68,705 sesiones.
-- Jueves: 69,021 sesiones.
-
-Los días con menor actividad son:
-
-- Sábado: 58,632 sesiones.
-- Domingo: 59,138 sesiones.
-
-Existe por tanto un patrón semanal de mayor actividad entre semana y menor
-actividad durante el fin de semana.
-
-#### Conversión
-
-El jueves presentó el Purchase Rate más alto:
-
-- Jueves: 3.61%.
-- Lunes: 3.58%.
-- Viernes: 3.50%.
-- Martes: 3.38%.
-- Miércoles: 3.37%.
-- Domingo: 3.37%.
-- Sábado: 3.14%.
-
-El sábado presentó simultáneamente el menor volumen de sesiones y el menor
-Purchase Rate.
-
-#### Revenue
-
-El jueves fue el día con mayor revenue:
-
-- Jueves: Bs 101,597.
-- Viernes: Bs 93,569.
-- Lunes: Bs 92,364.
-- Martes: Bs 91,278.
-- Miércoles: Bs 88,977.
-- Domingo: Bs 79,925.
-- Sábado: Bs 73,840.
-
-El jueves destaca por combinar alto volumen de tráfico, mayor Purchase Rate y
-mayor revenue.
-
-#### Etapas del Customer Journey
-
-View → Cart presentó su valor máximo el miércoles (24.57%), seguido por
-domingo (24.16%) y lunes (24.15%).
-
-Cart → Purchase presentó sus valores más altos el viernes (16.98%) y jueves
-(16.89%).
-
-Esto demuestra que las distintas etapas del journey no presentan necesariamente
-el mismo comportamiento temporal.
-
-Por ejemplo:
-
-- Miércoles presenta el mayor View → Cart, pero un Cart → Purchase relativamente
-  menor.
-- Jueves presenta un View → Cart inferior al miércoles, pero un Cart → Purchase
-  considerablemente mayor.
-
-Por lo tanto, no se debe optimizar una única etapa del funnel de manera aislada.
-
-### 11.3 Hipótesis y oportunidades preliminares
-
-Los análisis temporal mensual y semanal generan las siguientes hipótesis para
-investigaciones posteriores:
-
-1. La caída de conversión observada durante el período podría estar relacionada
-   principalmente con una menor conversión View → Cart.
-2. Las variaciones de revenue parecen estar asociadas principalmente con cambios
-   en el volumen de eventos de compra, dado que el valor medio por evento se
-   mantiene relativamente estable.
-3. El jueves representa un período de alto desempeño comercial.
-4. El sábado presenta una combinación de menor tráfico y menor conversión.
-5. Las diferentes etapas del Customer Journey responden de manera diferente a la
-   temporalidad.
-6. Los patrones semanales podrían tener implicaciones para la planificación de
-   campañas y acciones comerciales, pero no deben convertirse todavía en
-   recomendaciones causales.
-
-### 11.4 Limitaciones del análisis temporal
-
-- El dataset contiene únicamente cinco meses de información, por lo que no es
-  suficiente para establecer estacionalidad anual.
-- No se dispone de información sobre canal de adquisición, campaña o fuente de
-  tráfico.
-- Las diferencias temporales son descriptivas y no permiten determinar
-  causalidad.
-- `user_session` presenta limitaciones para análisis de duración temporal, por lo
-  que el análisis se concentra en comportamiento agregado por período.
-- Revenue se calcula a partir de eventos `purchase`.
-- No existe `order_id`, por lo que el valor medio utilizado corresponde a eventos
-  de compra y no a órdenes.
-
-### 11.5 Estado actual
-
-**Customer Journey: COMPLETADO**
-
-**Análisis temporal: 5.1 Tendencia mensual — COMPLETADO**
-
-**Análisis temporal: 5.2 Patrón semanal — COMPLETADO**
-
-**Pendiente:**
-- 5.3 Patrón intradía.
-- 5.4 Interpretación final de negocio.
-- Análisis de abandono y recuperación de carrito.
-- Insights CRO.
-
-### 11.6 Próximo paso
-
-Continuar con **5.3 Patrón intradía**, utilizando la variable `hour` para
-analizar volumen de actividad, conversión, revenue y posibles señales de
-fricción según la hora del día.
-
-### Hipótesis pendiente — intención nocturna y conversión diurna
-
-El análisis intradía identificó una diferencia relevante entre las etapas del Customer Journey:
-
-* `View → Cart` presenta mayores niveles durante aproximadamente **21:00–01:00**.
-* `Cart → Purchase` presenta mayores niveles principalmente durante aproximadamente **06:00–23:00**.
-* El tráfico, revenue y sesiones con compra se concentran principalmente durante el período diurno.
-
-Esto genera una hipótesis de comportamiento:
-
-> **Los usuarios podrían desarrollar intención de compra durante la noche y completar la compra posteriormente durante el día.**
-
-Esta hipótesis **NO ha sido validada**. Las métricas actuales están agregadas por hora y no permiten determinar si los eventos nocturnos y diurnos pertenecen al mismo usuario.
-
-### Acción futura
-
-Investigar durante el notebook de **Customer Analysis** utilizando:
-
-* `user_id`
-* `user_session`
-* `event_time`
-* `event_type`
-* `product_id`
-
-El objetivo será determinar si existe una transición temporal a nivel individual:
-
-`View/Cart nocturno → Compra posterior`
-
-y, de existir, medir:
-
-* proporción de usuarios que realizan este comportamiento;
-* tiempo entre intención y compra;
-* hora de inicio y finalización del journey;
-* comportamiento entre sesiones;
-* productos o categorías involucradas, si la estructura del dataset lo permite.
-
-**Prioridad:** hipótesis relevante para Customer Analysis.
-
-**Estado:** pendiente de validación.
-
-# PROJECT CONTEXT — Actualización: Customer Journey, Abandono y nuevas líneas analíticas
-
-## 6. Análisis de abandono y recuperación
-
-### 6.1 Abandono a nivel sesión
-
-Se definió una sesión abandonada como aquella que contiene al menos un evento `cart` pero ningún evento `purchase` dentro de la misma `user_session`.
-
-Resultados obtenidos:
-
-- Sesiones abandonadas: **84,581**
-- Usuarios que abandonaron: **35,791**
-- Tasa de abandono de carrito: aproximadamente **87%**
-- Tasa de sesiones con compra posterior al carrito dentro de la sesión: aproximadamente **12%**
-
-La métrica representa **abandono dentro de la sesión**, por lo que no debe interpretarse como abandono definitivo del usuario.
-
----
-
-### 6.2 Recuperación posterior
-
-Se investigó qué ocurre posteriormente con los usuarios que tuvieron una sesión con carrito sin compra.
-
-Definición:
-
-> **Usuario recuperado:** usuario que tuvo al menos una sesión con `cart` sin `purchase` y posteriormente registró un evento `purchase`.
-
-Resultados:
-
-- Usuarios que abandonaron: **35,791**
-- Usuarios recuperados: **6,525**
-- **Recovery Rate: 18.23%**
-
-La métrica debe interpretarse como:
-
-> El 18.23% de los usuarios que tuvieron una sesión de carrito sin compra realizaron posteriormente una compra.
-
-No se establece causalidad entre el abandono y la compra posterior. Una compra posterior no necesariamente corresponde al mismo producto o intención original.
-
-### Hipótesis futura
-
-Investigar posteriormente:
-
-`Abandono → tiempo → compra`
-
-utilizando `user_id`, `user_session`, `event_time` y `product_id`, con el objetivo de determinar si existe una relación temporal más precisa entre abandono y recuperación.
-
----
-
-## 6.4 Abandono por producto
-
-Se analizó el abandono a nivel de producto utilizando:
-
-- `user_session`
-- `product_id`
-- `event_type`
-
-Se consideró que un producto fue abandonado cuando apareció en un evento `cart` dentro de una sesión que no registró posteriormente un `purchase` para ese producto.
-
-### Hallazgos
-
-- Se identificaron productos con tasas de abandono extremadamente elevadas.
-- Al menos un producto presentó **100% de abandono**, sin compras registradas bajo la definición utilizada.
-- Los 10 productos con mayores tasas de abandono presentaron aproximadamente **96%–98%**.
-- Los productos con mayor abandono no necesariamente tenían menor volumen de sesiones con carrito que aquellos con menor abandono.
-- Los productos con menores tasas de abandono presentaron aproximadamente **62.3%–70%**.
-
-### Interpretación
-
-El fenómeno de abandono no parece estar limitado exclusivamente a productos con bajo volumen.
-
-Sin embargo, una tasa de abandono elevada por sí sola no demuestra que exista un problema específico del producto. Para identificar oportunidades comerciales se deberá considerar simultáneamente:
-
-- tasa de abandono;
-- volumen de carritos;
-- precio;
-- categoría;
-- marca;
-- volumen de compras.
-
-### Oportunidad CRO
-
-La elevada tasa de abandono observada constituye una señal para realizar una **revisión cualitativa del proceso de compra en la web**, incluyendo posibles fricciones en:
-
-- información del producto;
-- precio;
-- disponibilidad;
-- navegación;
-- carrito;
-- checkout;
-- medios de pago.
-
-No se establece que el proceso de compra sea la causa del abandono; se plantea como una **hipótesis de investigación**.
-
----
-
-## 6.5 Abandono por categoría
-
-El análisis se realizó utilizando **`category_id`** como identificador de categoría debido a la elevada cantidad de valores faltantes en `category_code`.
-
-### Distribución de sesiones con carrito por categoría
-
-- Categorías analizadas: **463**
-- Mínimo: **1**
-- Q1: **44.5**
-- Mediana: **166**
-- Q3: **508**
-- Máximo: **9,773**
-
-Se utilizó inicialmente un filtro de **50 sesiones con carrito** para evitar que categorías con muy poco volumen dominaran los rankings.
-
-### Hallazgos
-
-- Las categorías con mayores tasas de abandono presentan aproximadamente **90%–98%**.
-- En estas categorías sí se observa generalmente un menor volumen de sesiones con carrito.
-- Las categorías con menores tasas de abandono presentan aproximadamente **35.7%–55%**.
-
-### Interpretación
-
-A diferencia del análisis por producto, en categorías sí existe una diferencia más evidente entre **tasa de abandono y volumen de actividad**.
-
-Una categoría con 95% de abandono pero muy pocos carritos no representa necesariamente una oportunidad mayor que una categoría con 70% de abandono y miles de carritos.
-
-Por ello, la priorización futura deberá considerar:
-
-> **Abandonment Rate + Cart Volume**
-
-y posteriormente variables como precio, producto y categoría.
-
----
-
-## 6.6 Evolución temporal del abandono
-
-Se calculó la tasa general de abandono de carrito por mes.
-
-La tasa mensual observada se mantuvo aproximadamente entre:
-
-- **82.45%** → mínimo
-- **87.25%** → máximo
-
-### Abandono vs. Revenue
-
-Se realizaron dos análisis exploratorios:
-
-#### Abandonment Rate vs Revenue
-
-No se observó una relación lineal clara entre la **tasa de abandono mensual** y el revenue.
-
-Conclusión:
-
-> No existe evidencia suficiente para afirmar que un mayor porcentaje de abandono implique necesariamente un menor revenue.
-
-No debe interpretarse como evidencia de que el abandono no afecta al revenue; únicamente indica que **no se observa una relación lineal clara durante el período analizado**.
-
-#### Abandoned Sessions vs Revenue
-
-Se observó una relación positiva entre el número absoluto de sesiones abandonadas y el revenue.
-
-Sin embargo, esta relación puede estar explicada por el **volumen general de actividad**:
-
-`Más tráfico → más carritos → más abandonos + más oportunidades de compra → más revenue`
-
-Por esta razón, no se considera evidencia de una relación causal o de negocio entre abandono y revenue.
-
-### Aprendizaje metodológico
-
-Para comparar períodos con distinto volumen de actividad, las **tasas y proporciones suelen ser más informativas que los conteos absolutos**.
-
----
-
-# Nueva línea analítica — Revenue Forecasting
-
-Durante el análisis exploratorio se realizaron correlaciones entre variables de actividad y revenue.
-
-## Purchase Events → Revenue
-
-Se realizó primero una comparación mensual y posteriormente una comparación diaria.
-
-Para el análisis diario se creó:
-
-`daily_purchase`
-
-con:
-
-- `purchase_events`
-- `revenue`
-- `buyers`
-
-agregados por `date`.
-
-Se obtuvo:
-
-> **Correlación de Pearson diaria = 0.969**
-
-El scatterplot mostró una relación lineal positiva muy fuerte entre `purchase_events` y `revenue`.
-
-### Interpretación
-
-La relación es esperable debido a la propia estructura del dataset:
-
-`Purchase Events × precio promedio ≈ Revenue`
-
-Por tanto, existe un componente **estructural/mecánico** importante.
-
-No debe interpretarse directamente como evidencia de que `purchase_events` sea un predictor útil de revenue futuro.
-
-Sin embargo, el resultado abre una línea de investigación:
-
-> **Predecir el volumen futuro de compras y utilizarlo posteriormente para estimar revenue.**
-
----
-
-## Sessions → Revenue
-
-También se exploró la relación entre el número de sesiones y revenue.
-
-Se observó una relación positiva y cierta linealidad, aunque considerablemente menos fuerte que la encontrada entre `purchase_events` y revenue.
-
-Se identificó al menos un posible punto atípico que afecta la relación.
-
-### Hipótesis futura
-
-Investigar si variables de tráfico y conversión pueden utilizarse para realizar **forecasting de ingresos**:
-
-```text
-Sesiones
-   ↓
-Conversiones esperadas
-   ↓
-Purchase Events esperados
-   ↓
-Revenue esperado
-
-# PROJECT CONTEXT — Actualización: Insights CRO
-
-## 7. Insights CRO
-
-La sección 7 tiene como objetivo traducir los hallazgos obtenidos durante el análisis del Customer Journey, comportamiento temporal y abandono en **oportunidades de optimización CRO**.
-
-Los insights se consideran **hipótesis de optimización**, no causas comprobadas. El dataset permite identificar patrones y señales de oportunidad, pero no permite establecer causalidad por sí solo.
-
----
-
-## 7.1 Principales oportunidades CRO
-
-### Insight 1 — View → Cart como oportunidad prioritaria
-
-KPIs relevantes:
-
-- View Rate: **94.41%**
-- View → Cart: **23.07%**
-- Cart → Purchase: **15.91%**
-- Purchase Rate: **3.46%**
-
-La transición de `view` a `cart` representa una oportunidad importante de optimización, ya que una proporción considerable de las sesiones que visualizan productos no desarrolla una acción de intención de compra.
-
-Además, durante el análisis temporal se observó una disminución del `View → Cart` a lo largo del período, mientras que `Cart → Purchase` presentó un comportamiento relativamente más estable.
-
-### Hipótesis CRO
-
-> Mejoras en la presentación del producto, propuesta de valor, precio, disponibilidad, información o llamadas a la acción podrían incrementar la proporción de usuarios que pasan de `view` a `cart`.
-
-### Acción propuesta
-
-Realizar una auditoría de las páginas de producto, priorizando productos o categorías con:
-
-- alto volumen de views;
-- bajo `View → Cart`;
-- alto abandono posterior.
-
----
-
-## 7.2 Insight 2 — Elevado abandono después del carrito
-
-Aproximadamente **87% de las sesiones con carrito no registran una compra dentro de la misma sesión**.
-
-Esto representa una señal importante de pérdida de conversión entre la intención de compra y la finalización de la transacción.
-
-### Hipótesis CRO
-
-> Puede existir fricción entre el momento en que el usuario añade un producto al carrito y el momento en que debe completar la compra.
-
-### Acción propuesta
-
-Realizar una auditoría cualitativa del flujo:
-
-`Cart → Checkout → Datos → Pago → Confirmación`
-
-evaluando:
-
-- cantidad de pasos;
-- claridad de la información;
-- costos adicionales;
-- disponibilidad;
-- métodos de pago;
-- confianza;
-- errores;
-- experiencia móvil.
-
-No se establece que ninguno de estos factores sea la causa del abandono. Son elementos a investigar.
-
----
-
-## 7.3 Insight 3 — Oportunidad potencial de recuperación
-
-El análisis identificó:
-
-- Usuarios que abandonaron: **35,791**
-- Usuarios recuperados posteriormente: **6,525**
-- Recovery Rate: **18.23%**
-
-Esto demuestra que una sesión abandonada no representa necesariamente una pérdida definitiva del usuario.
-
-### Hipótesis Marketing/CRO
-
-> Los usuarios que abandonan podrían responder favorablemente a mecanismos de recuperación posteriores.
-
-### Investigación futura
-
-Antes de implementar estrategias de remarketing o recuperación, estudiar:
-
-- tiempo hasta la compra;
-- producto abandonado;
-- categoría;
-- comportamiento posterior;
-- frecuencia de visitas;
-- número de sesiones posteriores.
-
----
-
-## 7.4 Insight 4 — Diferencias de abandono por producto y categoría
-
-El abandono presenta diferencias importantes dentro del catálogo.
-
-### Productos
-
-- Se identificaron productos con hasta **100% de abandono**.
-- Los 10 productos con mayores tasas presentan aproximadamente **96%–98%** de abandono.
-- Los productos con menores tasas presentan aproximadamente **62.3%–70%**.
-
-Los productos con mayor abandono no necesariamente presentan menor volumen de sesiones con carrito.
-
-### Categorías
-
-- Las categorías con mayores tasas presentan aproximadamente **90%–98%**.
-- Las categorías con menores tasas presentan aproximadamente **35.7%–55%**.
-- Las categorías con mayores tasas presentan generalmente menor volumen de sesiones con carrito.
-
-### Implicación
-
-La priorización no debe basarse únicamente en la tasa de abandono.
-
-Debe considerar:
-
-> **Tasa de abandono + volumen de carritos + potencial económico**
-
----
-
-## 7.5 Insight 5 — Comportamiento temporal diferenciado
-
-El análisis intradía identificó un comportamiento diferente entre las etapas del Customer Journey:
-
-- `View → Cart`: mayores niveles aproximadamente entre **21:00 y 01:00**.
-- `Cart → Purchase`: mayores niveles principalmente durante el período diurno.
-- Tráfico, revenue y sesiones con compra: mayor concentración durante el período diurno.
-
-### Hipótesis
-
-> Algunos usuarios podrían desarrollar intención de compra durante la noche y completar posteriormente la compra durante el día.
-
-Esta hipótesis **no ha sido validada a nivel individual**.
-
-### Acción futura
-
-Investigar utilizando:
-
-- `user_id`;
-- `user_session`;
-- `event_time`;
-- `product_id`.
-
-El objetivo será identificar si existe el patrón:
-
-`View/Cart nocturno → Compra posterior`
-
-y medir:
-
-- proporción de usuarios;
-- tiempo entre intención y compra;
-- hora de inicio y finalización;
-- comportamiento entre sesiones;
-- productos/categorías involucrados.
-
-**Prioridad:** hipótesis relevante para el futuro notebook de Customer Analysis.
-
----
-
-## 7.6 Insight 6 — El abandono no debe analizarse únicamente mediante revenue
-
-Se encontró:
-
-- `Abandonment Rate` vs Revenue: **sin relación lineal evidente**.
-- `Abandoned Sessions` vs Revenue: **relación positiva**.
-
-La relación positiva entre sesiones abandonadas y revenue puede estar explicada por el volumen general de actividad:
-
-`Más tráfico → más carritos → más abandonos + más oportunidades de compra → más revenue`
-
-Por lo tanto:
-
-> El número absoluto de abandonos no debe utilizarse como indicador aislado del desempeño comercial.
-
-Para CRO es preferible considerar conjuntamente:
-
-- tasas de conversión;
-- volumen;
-- funnel;
-- revenue;
-- potencial económico.
-
----
-
-# 7.7 Priorización de oportunidades CRO
-
-Las oportunidades identificadas se priorizan inicialmente de la siguiente manera:
-
-| Oportunidad | Evidencia | Impacto potencial | Necesidad de validación |
-|---|---|---|---|
-| Optimizar `View → Cart` | Alta | Alta | Alta |
-| Auditar checkout | Alta | Alta | Alta |
-| Recuperación de usuarios | Media-Alta | Media-Alta | Alta |
-| Productos con alto abandono | Alta | Variable | Alta |
-| Categorías con alto abandono | Alta | Variable | Alta |
-| Comportamiento nocturno → compra diurna | Media | Potencialmente alta | Muy alta |
-
-Los niveles de impacto representan una **priorización analítica inicial**, no resultados demostrados.
-
----
-
-# 7.8 Framework de experimentación CRO
-
-Las recomendaciones CRO deberán seguir el flujo:
-
-`Evidencia → Hipótesis → Intervención → Experimento → Resultado`
-
-En lugar de recomendar directamente cambios, se plantea:
-
-1. Identificar una señal de fricción.
-2. Formular una hipótesis.
-3. Diseñar una intervención.
-4. Validar mediante experimentación.
-5. Medir el impacto sobre conversión.
-6. Implementar o descartar según resultados.
-
-### Ejemplos de hipótesis
-
-**Optimización de página de producto**
-
-> Mejorar la claridad de la información y propuesta de valor podría incrementar `View → Cart`.
-
-**Optimización del checkout**
-
-> Reducir posibles puntos de fricción en checkout podría incrementar `Cart → Purchase`.
-
-**Recuperación**
-
-> Una intervención posterior al abandono podría incrementar la proporción de usuarios que regresan y realizan una compra.
-
----
-
-# 7.9 Principio metodológico CRO
-
-Las recomendaciones deben mantener una separación clara entre:
-
-`Evidencia → Hipótesis → Acción → Validación`
-
-No se debe afirmar:
-
-> "El checkout está causando el abandono."
-
-Debe plantearse:
-
-> "Los datos justifican investigar el checkout como posible fuente de fricción."
-
-Posteriormente:
-
-> "La investigación cualitativa permitirá formular una hipótesis concreta."
-
-Y finalmente:
-
-> "La hipótesis deberá validarse mediante experimentación."
-
----
-
-# Estado actual del notebook 03_customer_journey
-
-El notebook cuenta actualmente con:
-
-- Radiografía de sesiones.
-- Customer Journey / Funnel.
-- KPIs de tráfico y conversión.
-- KPIs de facturación.
-- Análisis temporal mensual.
-- Análisis semanal.
-- Análisis intradía.
-- Interpretación temporal de negocio.
-- Abandono a nivel sesión.
-- Recuperación posterior.
-- Abandono por producto.
-- Abandono por categoría.
-- Evolución temporal del abandono.
-- Interpretación de negocio del abandono.
-- Insights CRO.
-- Exploraciones adicionales de correlación con revenue.
-
-## Líneas futuras identificadas
-
-### Customer Analysis
-
-Prioridad inmediata:
-
-- validar la hipótesis de intención nocturna → compra diurna;
-- analizar comportamiento entre múltiples sesiones;
-- estudiar tiempo entre abandono y recuperación;
-- identificar patrones de comportamiento a nivel usuario.
-
-### Revenue Forecasting
-
-Línea de investigación futura:
-
-- utilizar granularidad diaria;
-- estudiar predictores disponibles antes de la conversión;
-- evaluar forecasting de purchase events;
-- posteriormente estimar revenue;
-- evaluar outliers, tendencia, estacionalidad, autocorrelación y data leakage;
-- realizar validación temporal fuera de muestra.
-
-Se obtuvo una correlación diaria de **0.969 entre `purchase_events` y `revenue`**, pero se reconoce que esta relación posee un componente estructural debido a que el revenue se obtiene de los precios asociados a los eventos de compra. Por ello, no se considera todavía evidencia suficiente de capacidad predictiva útil.
+| Prioridad | Evidencia | Hipótesis / siguiente validación |
+|---|---|---|
+| Alta | \`View → Cart\` de 23.07% y deterioro temporal | Auditar páginas de producto, priorizando alto view, bajo paso a cart y abandono alto. Evaluar propuesta de valor, información, precio, disponibilidad y CTA. |
+| Alta | ~87% de abandono intra-sesión | Auditar cualitativamente \`Cart → Checkout → Pago → Confirmación\`: pasos, costos, confianza, errores, disponibilidad, pagos y experiencia móvil. |
+| Media-alta | 18.23% de abandonadores compra después | Antes de remarketing, medir tiempo hasta compra, producto/categoría abandonados, sesiones posteriores y comportamiento posterior. |
+| Variable | Diferencias por producto y categoría | Priorizar con tasa, volumen de carritos y potencial económico. |
+| Por validar | Intención nocturna y conversión diurna | Confirmar a nivel individual antes de diseñar intervenciones horarias. |
+
+El marco requerido para recomendaciones CRO es:
+
+\`Evidencia → Hipótesis → Intervención → Experimento → Resultado\`
+
+## 8. Customer Analysis — estado vigente
+
+El notebook \`notebooks/04_customer_analysis.ipynb\` está iniciado. Su objetivo es
+trasladar el análisis de **evento → sesión → usuario** para comprender conversión,
+recurrencia, comportamiento entre sesiones, recuperación e intención de compra.
+RFM, cohortes, LTV y forecasting permanecen reservados para notebooks posteriores.
+
+### Preparación y tratamiento de sesiones nulas
+
+La fase de carga está completada: se utilizó el parquet limpio sin aplicar nuevas
+transformaciones. Se construyó \`customer_summary\`, con una fila por \`user_id\` y
+las variables \`known_sessions\`, \`events\`, \`active_days\`,
+\`products_interacted\`, \`cart_events\`, \`purchase_events\`, \`revenue\` y
+\`events_without_session\`.
+
+\`known_sessions\` cuenta solo sesiones identificables; no equivale a ausencia de
+actividad cuando vale cero. Hay 506 eventos (0.02%) con \`user_session\` nulo,
+pertenecientes a 146 usuarios (0.089%): 417 son \`cart\`, 85
+\`remove_from_cart\`, 4 \`view\` y ninguno \`purchase\`. De ellos, 130 usuarios
+tienen además sesiones válidas y 16 solo actividad sin sesión identificable.
+
+**Decisión:** no imputar \`user_session\`. Conservar estos eventos en análisis a
+nivel usuario mediante \`user_id\`, pero excluirlos de métricas que requieran una
+sesión específica.
+
+### Radiografía de clientes completada
+
+| Métrica | Valor |
+|---|---:|
+| Usuarios únicos | 163,781 |
+| Usuarios compradores | 11,040 |
+| Usuarios no compradores | 152,741 |
+| User conversion rate | 6.74% |
+| Usuarios con una sesión conocida | 108,362 |
+| Usuarios con 2+ sesiones conocidas | 55,403 |
+| Single-session rate | 66.16% |
+| Repeat user rate | ~33.8% |
+
+Se debe verificar una discrepancia de 16 usuarios entre el total y la suma de
+usuarios de una sesión y usuarios recurrentes antes de cerrar esa métrica.
+
+Las distribuciones son fuertemente asimétricas: la media frente a la mediana es
+2.72 vs. 1 en sesiones conocidas, 12.67 vs. 2 en eventos, 6.22 vs. 1 en productos
+interactuados, 3.51 vs. 0 en carts, 0.78 vs. 0 en purchases y Bs 3.80 vs. 0 en
+revenue. Una minoría de usuarios altamente activos eleva las medias; el usuario
+típico interactúa poco.
+
+### Concentración de revenue
+
+La concentración debe calcularse **solo entre compradores**, no sobre todos los
+usuarios: como solo 6.74% compra, el top 10% de todos los usuarios contiene por
+definición a todos los usuarios con revenue positivo y produce un resultado inútil
+de 100%.
+
+Entre los 11,040 compradores, el top 10% (1,104 usuarios) generó Bs 263,768.62,
+equivalente al **42.44%** de los Bs 621,549.60 de revenue. Es una concentración
+descriptiva relevante, pero no prueba fidelidad, valor futuro, rentabilidad ni una
+dependencia estructural. La clasificación es retrospectiva y usa revenue acumulado
+del período.
+
+### Próximos análisis priorizados
+
+1. Completar la curva de concentración entre compradores: top 1%, 5%, 10%, 20% y 50%.
+2. Comparar usuarios compradores vs. no compradores.
+3. Analizar distribución de sesiones por usuario, recurrencia y comportamiento entre sesiones.
+4. Validar la hipótesis **intención nocturna → compra diurna** a nivel individual,
+   usando \`user_id\`, \`user_session\`, \`event_time\`, \`event_type\` y, cuando
+   aporte valor, \`product_id\` y \`category_id\`.
+
+Para la hipótesis nocturna, medir proporción de usuarios con \`view\`/\`cart\`
+nocturno que compra después, tiempo hasta la compra, ocurrencia en la misma o en
+otra sesión y coincidencia de producto o categoría cuando sea posible.
+
+Después, evaluar segmentación RFM, cohortes, retención, recompra, LTV (solo cinco
+meses y sin \`order_id\`) y análisis de productos/venta cruzada según viabilidad.
+
+## 9. Machine Learning y forecasting
+
+No existe un problema de ML predefinido. Su implementación depende de que el análisis demuestre valor y permita una validación temporal robusta.
+
+Línea exploratoria vigente: forecasting de volumen de compras y, después, estimación de revenue. La correlación diaria entre \`purchase_events\` y revenue fue 0.969, pero es principalmente estructural (\`purchase events × precio ≈ revenue\`) y no demuestra capacidad predictiva futura. Evitar data leakage: los predictores deben estar disponibles antes del período objetivo.
+
+Antes de modelar, investigar tendencia, estacionalidad, autocorrelación, outliers, predictores disponibles y validación temporal fuera de muestra. Otras alternativas solo deben considerarse si la evidencia lo justifica: propensión de compra, churn o recomendación.
+
+## 10. Estructura de trabajo
+
+\`\`\`text
+data/raw/ecommerce.db                  # fuente inmutable
+data/interim/master_events.db          # consolidación de tablas mensuales
+data/processed/ecommerce_clean.parquet # fuente analítica principal
+notebooks/01_data_understanding.ipynb
+notebooks/02_data_quality.ipynb
+notebooks/03_customer_journey_analysis.ipynb
+notebooks/04_customer_analysis.ipynb   # próxima prioridad
+notebooks/05_product_analysis.ipynb
+notebooks/06_rfm_segmentation.ipynb
+notebooks/07_cohort_analysis.ipynb
+notebooks/08_ltv_analysis.ipynb
+notebooks/09_advanced_analytics.ipynb
+notebooks/10_ml_solution.ipynb
+src/                                   # funciones reutilizables
+reports/business_report.md             # síntesis ejecutiva final
+\`\`\`
+
+## 11. Checklist al reiniciar el trabajo
+
+1. Cargar \`data/processed/ecommerce_clean.parquet\`; no repetir limpieza salvo que se encuentre un problema nuevo.
+2. Confirmar el estado del notebook que se va a continuar antes de modificarlo.
+3. Mantener las definiciones de KPI anteriores para comparabilidad.
+4. Documentar nuevas decisiones, resultados, limitaciones y próximo paso en este archivo, sustituyendo estado superado en lugar de añadir actualizaciones cronológicas duplicadas.
