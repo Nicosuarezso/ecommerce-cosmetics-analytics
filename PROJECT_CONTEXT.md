@@ -248,3 +248,349 @@ reports/business_report.md             # síntesis ejecutiva final
 2. Confirmar el estado del notebook que se va a continuar antes de modificarlo.
 3. Mantener las definiciones de KPI anteriores para comparabilidad.
 4. Documentar nuevas decisiones, resultados, limitaciones y próximo paso en este archivo, sustituyendo estado superado en lugar de añadir actualizaciones cronológicas duplicadas.
+
+
+
+## 8. Customer Analysis — Recurrencia y conversión
+
+Se realizó un análisis descriptivo de los usuarios agrupándolos según su nivel de recurrencia durante el período analizado.
+
+Se definieron tres grupos:
+
+* **1 sesión**
+* **2 sesiones**
+* **3+ sesiones**
+
+El objetivo fue evaluar si existen diferencias en el comportamiento comercial según el nivel de recurrencia.
+
+### 8.1 Resultados
+
+| Grupo       | Usuarios | Purchase Rate | Avg. Purchase Events | Median Purchase Events | Avg. Revenue | Median Revenue | Avg. Unique Products | Median Unique Products |
+| ----------- | -------: | ------------: | -------------------: | ---------------------: | -----------: | -------------: | -------------------: | ---------------------: |
+| 1 sesión    |  108,362 |         2.13% |                0.138 |                      0 |        0.747 |              0 |                1.982 |                      1 |
+| 2 sesiones  |   25,385 |         5.63% |                0.352 |                      0 |        2.067 |              0 |                3.758 |                      2 |
+| 3+ sesiones |   30,018 |        24.33% |                3.454 |                      0 |       16.261 |              0 |               23.585 |                      7 |
+
+### 8.2 Principales observaciones
+
+Se observa una asociación descriptiva fuerte entre recurrencia y comportamiento comercial.
+
+El **Purchase Rate** aumenta de:
+
+* 2.13% en usuarios con una sesión.
+* 5.63% en usuarios con dos sesiones.
+* 24.33% en usuarios con tres o más sesiones.
+
+El grupo de 3+ sesiones presenta aproximadamente **11.4 veces** el Purchase Rate observado en usuarios de una sola sesión.
+
+También se observa un aumento importante en el número promedio de eventos de compra:
+
+* 0.138 en usuarios con una sesión.
+* 0.352 en usuarios con dos sesiones.
+* 3.454 en usuarios con 3+ sesiones.
+
+El revenue promedio por usuario presenta un comportamiento similar:
+
+* 0.747 en usuarios con una sesión.
+* 2.067 en usuarios con dos sesiones.
+* 16.261 en usuarios con 3+ sesiones.
+
+Finalmente, los usuarios recurrentes interactúan con una cantidad considerablemente mayor de productos:
+
+* 1.982 productos distintos en usuarios con una sesión.
+* 3.758 en usuarios con dos sesiones.
+* 23.585 en usuarios con 3+ sesiones.
+
+### 8.3 Interpretación
+
+Los resultados sugieren que los usuarios con mayor recurrencia presentan simultáneamente:
+
+* mayor probabilidad de compra;
+* mayor frecuencia de eventos de compra;
+* mayor revenue;
+* mayor exploración del catálogo.
+
+Por lo tanto, la recurrencia aparece como una característica fuertemente asociada al valor comercial del usuario.
+
+Sin embargo, estos resultados son **descriptivos y no establecen causalidad**.
+
+No puede concluirse que aumentar artificialmente el número de sesiones de un usuario provoque un incremento en sus compras o revenue.
+
+Una posible explicación alternativa es que los usuarios con mayor intención de compra regresen más veces al sitio.
+
+### 8.4 Observación sobre la distribución
+
+La mediana de `purchase_events` y `revenue` es igual a 0 en los tres grupos.
+
+Esto indica que ambas variables presentan una distribución altamente sesgada: una proporción importante de usuarios no registra compras, mientras que una minoría concentra una cantidad considerable de eventos de compra y revenue.
+
+Por este motivo, las medias deben interpretarse conjuntamente con las medianas y no como representación directa del usuario típico.
+
+---
+
+# 8.5 Nueva hipótesis — Propensión de compra
+
+El fuerte patrón observado entre recurrencia y Purchase Rate genera una nueva hipótesis analítica:
+
+> **El comportamiento histórico observado de un usuario podría contener información útil para estimar su probabilidad de realizar una compra posteriormente.**
+
+Esta hipótesis abre una posible línea futura de Machine Learning.
+
+El problema potencial podría formularse como:
+
+> **Dado el comportamiento de un usuario hasta un determinado momento, ¿podemos estimar la probabilidad de que realice una compra posteriormente?**
+
+Conceptualmente:
+
+```text
+Comportamiento observado
+        ↓
+Variables del usuario
+        ↓
+P(compra futura)
+```
+
+Entre las posibles variables predictoras podrían investigarse, dependiendo de la estructura temporal de los datos:
+
+* número de sesiones;
+* número de views;
+* número de carritos;
+* productos interactuados;
+* categorías interactuadas;
+* comportamiento reciente;
+* frecuencia de interacción;
+* otras características derivadas del comportamiento.
+
+### 8.6 Condiciones para evaluar esta oportunidad
+
+Esta hipótesis **no implica que se deba construir automáticamente un modelo de Machine Learning**.
+
+Antes de implementarlo será necesario comprobar:
+
+1. Si existe suficiente información temporal para definir correctamente una compra futura.
+2. Qué variables están disponibles antes del momento de predicción.
+3. Cómo definir el target sin introducir **data leakage**.
+4. Qué horizonte temporal de predicción tiene sentido para el negocio.
+5. Si el modelo puede superar enfoques estadísticos o reglas de negocio más simples.
+6. Si una predicción de propensión puede convertirse en una acción comercial concreta.
+
+Si estas condiciones se cumplen, podría evaluarse posteriormente un problema de clasificación probabilística en el notebook de Machine Learning.
+
+### 8.7 Posible aplicación de negocio
+
+Una solución de este tipo podría permitir estimar la propensión de compra de usuarios en función de su comportamiento observado y utilizar dicha información para priorizar acciones como:
+
+* personalización;
+* remarketing;
+* recuperación;
+* recomendaciones;
+* priorización de usuarios con alta intención.
+
+La aplicación concreta deberá definirse posteriormente según las capacidades reales de los datos y los resultados del análisis.
+
+### Estado
+
+**Recurrencia y conversión: COMPLETADO**
+
+**Hipótesis de propensión de compra: IDENTIFICADA — pendiente de validación**
+
+La hipótesis se conservará como una posible oportunidad para la futura evaluación de Machine Learning, sin asumir todavía que será la solución predictiva definitiva del proyecto.
+
+# PROJECT CONTEXT — Actualización: Customer Analysis — Intención nocturna → Compra posterior
+
+## 9. Customer Analysis — Intención nocturna → Compra posterior
+
+### Objetivo del análisis
+
+Se investigó si la actividad realizada por los usuarios durante la noche puede funcionar como una señal temprana de intención de compra y si dicha actividad está asociada con una compra posterior.
+
+Se definió como **actividad nocturna** cualquier interacción realizada entre las **21:00 y las 05:59**.
+
+Los usuarios nocturnos fueron clasificados según la intensidad de su interacción:
+
+* **Sin actividad nocturna:** usuarios sin interacciones durante la franja nocturna.
+* **View nocturno:** usuarios que realizaron al menos un `view` durante la noche.
+* **Cart nocturno:** usuarios que realizaron al menos un `cart` durante la noche.
+
+Para cada usuario se analizó si existió una compra posterior dentro de ventanas de:
+
+* 24 horas.
+* 48 horas.
+* 7 días.
+
+---
+
+### Proporción de Night Users
+
+Aproximadamente el **22% de los usuarios únicos** presentaron algún tipo de actividad durante la franja nocturna.
+
+Este dato establece que el comportamiento nocturno no corresponde a un segmento marginal del tráfico y justifica analizarlo como una dimensión relevante del comportamiento del cliente.
+
+---
+
+### Resultados principales
+
+| night_intent_group     |   users | purchase_24h | purchase_48h | purchase_7d |
+| ---------------------- | ------: | -----------: | -----------: | ----------: |
+| Cart nocturno          |  10,321 |       5.232% |       6.094% |      8.216% |
+| Sin actividad nocturna | 126,484 |       0.009% |       0.009% |      0.011% |
+| View nocturno          |  26,976 |       0.426% |       0.630% |      0.930% |
+
+Los resultados muestran un patrón consistente:
+
+**Sin actividad nocturna → View nocturno → Cart nocturno**
+
+A medida que aumenta la intensidad de la interacción nocturna, aumenta también la proporción de usuarios que posteriormente realizan una compra.
+
+---
+
+### Hallazgo principal
+
+Los usuarios con **Cart nocturno** presentan una tasa de compra posterior considerablemente superior al resto de los grupos.
+
+Dentro de las siguientes 24 horas:
+
+* Cart nocturno: **5.232%**
+* View nocturno: **0.426%**
+* Sin actividad nocturna: **0.009%**
+
+El grupo Cart nocturno presenta aproximadamente **601.6×** el nivel relativo de compra posterior del grupo sin actividad nocturna.
+
+Sin embargo, debido a que la tasa del grupo de referencia es extremadamente pequeña, el **lift relativo no debe utilizarse como única métrica de comunicación**. La tasa absoluta y la diferencia en puntos porcentuales son métricas más estables para interpretar el fenómeno.
+
+La diferencia absoluta entre Cart nocturno y Sin actividad nocturna en 24 horas es de aproximadamente **5.22 puntos porcentuales**.
+
+---
+
+### Persistencia temporal del comportamiento
+
+El patrón se mantiene al ampliar la ventana temporal:
+
+**Cart nocturno**
+
+* 24h → **5.232%**
+* 48h → **6.094%**
+* 7 días → **8.216%**
+
+**View nocturno**
+
+* 24h → **0.426%**
+* 48h → **0.630%**
+* 7 días → **0.930%**
+
+**Sin actividad nocturna**
+
+* 24h → **0.009%**
+* 48h → **0.009%**
+* 7 días → **0.011%**
+
+La persistencia del patrón en diferentes ventanas temporales fortalece la evidencia descriptiva de que la actividad nocturna, especialmente el `cart`, contiene información asociada con una compra posterior.
+
+---
+
+### Interpretación
+
+Los resultados sugieren que determinadas interacciones nocturnas pueden actuar como señales de **intención futura de compra**.
+
+El `cart` nocturno parece representar una señal considerablemente más fuerte que un simple `view`, lo que resulta coherente con la idea de que agregar un producto al carrito representa un nivel de intención mayor.
+
+Una posible interpretación del comportamiento es:
+
+**Exploración nocturna → intención → interrupción → compra posterior**
+
+Esta interpretación debe considerarse como una **hipótesis de comportamiento** y no como una relación causal demostrada.
+
+El análisis demuestra asociación entre las variables, pero no permite afirmar que la actividad nocturna sea la causa de la compra posterior.
+
+---
+
+### Implicaciones para Marketing y Ventas
+
+El hallazgo representa una oportunidad potencial para utilizar señales conductuales para **priorizar usuarios con mayor intención de compra**.
+
+En particular, un usuario que:
+
+1. realiza actividad durante la noche;
+2. agrega productos al carrito;
+3. no completa inmediatamente la compra;
+
+podría considerarse un segmento de alta prioridad para acciones de recuperación.
+
+Posibles aplicaciones:
+
+* remarketing posterior a la actividad nocturna;
+* recuperación de carritos abandonados;
+* recordatorios personalizados de productos;
+* personalización de comunicaciones;
+* priorización de usuarios dentro de campañas comerciales;
+* análisis de incentivos dirigidos únicamente a usuarios con señales fuertes de intención.
+
+La estrategia no debería consistir simplemente en contactar a todos los usuarios nocturnos, sino en utilizar la **intensidad del comportamiento** como una señal para priorizar recursos comerciales.
+
+---
+
+### Conexión con Customer Propensity Modeling
+
+Este análisis refuerza la hipótesis identificada previamente en la sección de recurrencia y conversión: diferentes características del comportamiento del usuario parecen estar asociadas con una mayor probabilidad de compra.
+
+Hasta el momento se han identificado dos señales potencialmente relevantes:
+
+1. **Recurrencia:** usuarios con mayor número de sesiones presentan mayor Purchase Rate.
+2. **Intención nocturna:** usuarios con `cart` nocturno presentan una mayor tasa de compra posterior.
+
+Esto plantea una futura pregunta analítica:
+
+> **¿Podemos estimar la probabilidad de compra de un usuario utilizando su comportamiento observado hasta un determinado momento?**
+
+Posibles variables futuras para investigar:
+
+* número de sesiones;
+* número de visualizaciones;
+* número de carritos;
+* número de productos interactuados;
+* número de abandonos;
+* actividad nocturna;
+* tiempo desde la última interacción;
+* frecuencia de interacción;
+* categorías o productos interactuados;
+* comportamiento histórico del usuario.
+
+Esta hipótesis deberá validarse posteriormente mediante una definición temporal adecuada del problema y evitando **data leakage**.
+
+Por lo tanto, este análisis **no constituye todavía un modelo predictivo**, sino evidencia exploratoria que justifica investigar posteriormente un modelo de **Purchase Propensity**.
+
+---
+
+### Limitaciones
+
+1. **Asociación, no causalidad.**
+   El análisis identifica una relación entre actividad nocturna y compra posterior, pero no demuestra que la actividad nocturna provoque la compra.
+
+2. **Sesiones no utilizadas como unidad temporal.**
+   Debido a que `user_session` fue previamente considerado poco fiable como representación de una sesión temporal real, el análisis se basa principalmente en `user_id` y `event_time`.
+
+3. **Ausencia de `order_id`.**
+   Las compras se analizan como eventos `purchase`, no como pedidos físicos.
+
+4. **No se verificó todavía si la compra posterior ocurre durante el día.**
+   El análisis actual identifica compras posteriores dentro de ventanas temporales, pero todavía no determina si esas compras ocurren específicamente entre 06:00 y 20:59.
+
+5. **No se determinó correspondencia entre productos.**
+   Una compra posterior no necesariamente corresponde al mismo producto que fue agregado al carrito durante la noche.
+
+6. **Definición analítica de actividad nocturna.**
+   La franja 21:00–05:59 es una definición operativa utilizada para este análisis y podría modificarse según el contexto del negocio.
+
+---
+
+### Estado del análisis
+
+**3.3 Intención nocturna → Compra posterior: completada parcialmente.**
+
+El análisis confirma una asociación fuerte entre el `cart` nocturno y la compra posterior, con un patrón consistente entre ventanas de 24 horas, 48 horas y 7 días.
+
+El siguiente análisis pendiente para cerrar completamente esta hipótesis es determinar si las compras posteriores ocurren predominantemente durante el **horario diurno**, validando específicamente la hipótesis:
+
+> **Intención nocturna → Compra diurna posterior.**
+
+Este hallazgo también queda registrado como una señal potencial para futuros análisis de **Purchase Propensity Modeling** y estrategias de Marketing/CRO.
